@@ -1,0 +1,12 @@
+[
+    {
+        "initialK" : ["patrol and breach"],
+        "targetK" : "patrol",
+        "operator" : {"name" : "satisfiability"},
+    },
+    {
+        "initialK" : ["-patrol and breach"],
+        "targetK" : "patrol and breach",
+        "operator" : {"name" : "satisfiability"},
+    },
+]

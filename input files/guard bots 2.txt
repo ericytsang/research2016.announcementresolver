@@ -1,0 +1,12 @@
+[
+    {
+        "initialK" : ["patrol and breach"],
+        "targetK" : "patrol",
+        "operator" : {"name" : "hamming distance"},
+    },
+    {
+        "initialK" : ["-patrol and breach"],
+        "targetK" : "patrol",
+        "operator" : {"name" : "hamming distance"},
+    },
+]

@@ -1,0 +1,22 @@
+[
+    {
+        "initialK" : ["-a and b and -c and -d"],
+        "targetK" : "a and -b and c and d",
+        "operator" : {"name" : "hamming distance"},
+    },
+    {
+        "initialK" : ["a and b and -c and -d"],
+        "targetK" : "-a and -b and c and d",
+        "operator" : {"name" : "hamming distance"},
+    },
+    {
+        "initialK" : ["-a and b and -c and d"],
+        "targetK" : "a and -b and c and -d",
+        "operator" : {"name" : "hamming distance"},
+    },
+    {
+        "initialK" : ["a and b and -c and d"],
+        "targetK" : "-a and -b and c and -d",
+        "operator" : {"name" : "hamming distance"},
+    },
+]
