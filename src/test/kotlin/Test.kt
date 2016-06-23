@@ -42,20 +42,7 @@ class Test
 
     fun baseTest(input:String)
     {
-        val problemInstances = JSONArray(input).mapIndexedNotNull()
-        {
-            index,jsonObject ->
-            jsonObject as JSONObject
-            return@mapIndexedNotNull try
-            {
-                jsonObject.toProblemInstance()
-            }
-            catch (ex:Exception)
-            {
-                println("parsing error at line ${index+1}: ${ex.message}")
-                null
-            }
-        }
+        val problemInstances = JSONArray(input).map() {(it as JSONObject).toProblemInstance()}
 
         println(SimpleAnnouncementResolutionStrategy().resolve(problemInstances)?.toParsableString() ?: "no solution")
     }
