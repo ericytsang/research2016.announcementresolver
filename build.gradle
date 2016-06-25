@@ -1,4 +1,4 @@
-group 'research2016'
+group 'com.github.ericytsang'
 
 buildscript {
     ext.kotlin_version = '1.0.2-1'
@@ -12,26 +12,25 @@ buildscript {
 
 apply plugin: 'kotlin'
 
+tasks.withType(JavaCompile) {
+    sourceCompatibility = "1.8"
+    targetCompatibility = "1.8"
+}
+
 repositories {
     mavenCentral()
+    maven { url "https://jitpack.io" }
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    compile "com.github.ericytsang:research2016.propositionallogic:1.0"
     compile group: 'org.json', name: 'json', version: '20160212'
     testCompile 'junit:junit:4.11'
     testCompile "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
 }
 
-allprojects {
-    tasks.withType(JavaCompile) {
-        sourceCompatibility = "1.8"
-        targetCompatibility = "1.8"
-    }
-}
-
-task executable(type: Jar) {
+task executable(type: Jar, dependsOn: classes) {
     from sourceSets.main.output
     from {configurations.runtime.collect {zipTree(it)}} {
         exclude "META-INF/*.SF"

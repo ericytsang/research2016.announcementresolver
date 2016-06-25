@@ -1,22 +1,22 @@
-package research2016.announcementresolver
+package com.github.ericytsang.research2016.announcementresolver
 
 import org.json.JSONArray
 import org.json.JSONObject
-import research2016.propositionallogic.And
-import research2016.propositionallogic.AnnouncementResolutionStrategy
-import research2016.propositionallogic.BeliefRevisionStrategy
-import research2016.propositionallogic.ComparatorBeliefRevisionStrategy
-import research2016.propositionallogic.HammingDistanceComparator
-import research2016.propositionallogic.OrderedSetsComparator
-import research2016.propositionallogic.Proposition
-import research2016.propositionallogic.SatisfiabilityBeliefRevisionStrategy
-import research2016.propositionallogic.SimpleAnnouncementResolutionStrategy
-import research2016.propositionallogic.Variable
-import research2016.propositionallogic.WeightedHammingDistanceComparator
-import research2016.propositionallogic.makeFrom
-import research2016.propositionallogic.models
-import research2016.propositionallogic.toDnf
-import research2016.propositionallogic.toParsableString
+import com.github.ericytsang.research2016.propositionallogic.And
+import com.github.ericytsang.research2016.propositionallogic.AnnouncementResolutionStrategy
+import com.github.ericytsang.research2016.propositionallogic.BeliefRevisionStrategy
+import com.github.ericytsang.research2016.propositionallogic.ComparatorBeliefRevisionStrategy
+import com.github.ericytsang.research2016.propositionallogic.HammingDistanceComparator
+import com.github.ericytsang.research2016.propositionallogic.OrderedSetsComparator
+import com.github.ericytsang.research2016.propositionallogic.Proposition
+import com.github.ericytsang.research2016.propositionallogic.SatisfiabilityBeliefRevisionStrategy
+import com.github.ericytsang.research2016.propositionallogic.SimpleAnnouncementResolutionStrategy
+import com.github.ericytsang.research2016.propositionallogic.Variable
+import com.github.ericytsang.research2016.propositionallogic.WeightedHammingDistanceComparator
+import com.github.ericytsang.research2016.propositionallogic.makeFrom
+import com.github.ericytsang.research2016.propositionallogic.models
+import com.github.ericytsang.research2016.propositionallogic.toDnf
+import com.github.ericytsang.research2016.propositionallogic.toParsableString
 import java.io.InputStreamReader
 
 object jsonSchema
@@ -107,7 +107,7 @@ fun JSONObject.toProblemInstance():AnnouncementResolutionStrategy.ProblemInstanc
 
     val targetK:Proposition = this
         .getString("${jsonSchema.targetK}")
-        .let {Proposition.Companion.makeFrom(it)}
+        .let {com.github.ericytsang.research2016.propositionallogic.Proposition.makeFrom(it)}
 
     val operator:BeliefRevisionStrategy = this
         .getJSONObject("${jsonSchema.operator}")

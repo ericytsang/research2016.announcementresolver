@@ -1,9 +1,10 @@
+package com.github.ericytsang.research2016.announcementresolver
+
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Test
-import research2016.announcementresolver.toProblemInstance
-import research2016.propositionallogic.SimpleAnnouncementResolutionStrategy
-import research2016.propositionallogic.toParsableString
+import com.github.ericytsang.research2016.propositionallogic.SimpleAnnouncementResolutionStrategy
+import com.github.ericytsang.research2016.propositionallogic.toParsableString
 
 /**
  * Created by surpl on 6/23/2016.
