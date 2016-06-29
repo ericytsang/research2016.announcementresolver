@@ -5,14 +5,17 @@ import org.json.JSONObject
 import com.github.ericytsang.research2016.propositionallogic.And
 import com.github.ericytsang.research2016.propositionallogic.AnnouncementResolutionStrategy
 import com.github.ericytsang.research2016.propositionallogic.BeliefRevisionStrategy
+import com.github.ericytsang.research2016.propositionallogic.BruteForceAnnouncementResolutionStrategy
+import com.github.ericytsang.research2016.propositionallogic.ByDistanceAnnouncementResolutionStrategy
 import com.github.ericytsang.research2016.propositionallogic.ComparatorBeliefRevisionStrategy
 import com.github.ericytsang.research2016.propositionallogic.HammingDistanceComparator
 import com.github.ericytsang.research2016.propositionallogic.OrderedSetsComparator
 import com.github.ericytsang.research2016.propositionallogic.Proposition
 import com.github.ericytsang.research2016.propositionallogic.SatisfiabilityBeliefRevisionStrategy
-import com.github.ericytsang.research2016.propositionallogic.SimpleAnnouncementResolutionStrategy
 import com.github.ericytsang.research2016.propositionallogic.Variable
 import com.github.ericytsang.research2016.propositionallogic.WeightedHammingDistanceComparator
+import com.github.ericytsang.research2016.propositionallogic.contradiction
+import com.github.ericytsang.research2016.propositionallogic.findAllAnnouncements
 import com.github.ericytsang.research2016.propositionallogic.makeFrom
 import com.github.ericytsang.research2016.propositionallogic.models
 import com.github.ericytsang.research2016.propositionallogic.toDnf
@@ -61,40 +64,118 @@ object jsonSchema
     }
 }
 
-fun main(args:Array<String>)
+object ByDistanceAnnouncementResolver
 {
-    val input = InputStreamReader(System.`in`,"UTF-8").readText()
-
-    val problemInstances = JSONArray(input).mapIndexedNotNull()
+    @JvmStatic
+    fun main(args:Array<String>)
     {
-        index,jsonObject ->
-        jsonObject as JSONObject
-        return@mapIndexedNotNull try
+        val input = InputStreamReader(System.`in`,"UTF-8").readText()
+
+        val problemInstances = JSONArray(input).mapIndexedNotNull()
         {
-            jsonObject.toProblemInstance()
+            index,jsonObject ->
+            jsonObject as JSONObject
+            return@mapIndexedNotNull try
+            {
+                jsonObject.toProblemInstance()
+            }
+            catch (ex:Exception)
+            {
+                println("parsing error of element at index ${index+1}: ${ex.message}")
+                null
+            }
         }
-        catch (ex:Exception)
+
+        val announcement = ByDistanceAnnouncementResolutionStrategy().resolve(problemInstances)
+        if (announcement != null)
         {
-            println("parsing error of element at index ${index+1}: ${ex.message}")
-            null
+            println("announcement: ${announcement.toDnf().toParsableString()}")
+            problemInstances.forEach()
+            {
+                println("initialK: ${(And.make(it.initialBeliefState) ?: contradiction).models}")
+                println("targetK:  ${it.targetBeliefState.models}")
+                println("resultK:  ${And.make(it.reviseBy(announcement))!!.models}")
+                println()
+            }
+        }
+        else
+        {
+            println("no solution")
         }
     }
+}
 
-    val announcement = SimpleAnnouncementResolutionStrategy().resolve(problemInstances)
-    if (announcement != null)
+object BruteForceAnnouncementResolver
+{
+    @JvmStatic
+    fun main(args:Array<String>)
     {
-        println("announcement: ${announcement.toDnf().toParsableString()}")
+        val input = InputStreamReader(System.`in`,"UTF-8").readText()
+
+        val problemInstances = JSONArray(input).mapIndexedNotNull()
+        {
+            index,jsonObject ->
+            jsonObject as JSONObject
+            return@mapIndexedNotNull try
+            {
+                jsonObject.toProblemInstance()
+            }
+            catch (ex:Exception)
+            {
+                println("parsing error of element at index ${index+1}: ${ex.message}")
+                null
+            }
+        }
+
+        val announcement = BruteForceAnnouncementResolutionStrategy().resolve(problemInstances)
+        if (announcement != null)
+        {
+            println("announcement: ${announcement.toDnf().toParsableString()}")
+            problemInstances.forEach()
+            {
+                println("initialK: ${(And.make(it.initialBeliefState) ?: contradiction).models}")
+                println("targetK:  ${it.targetBeliefState.models}")
+                println("resultK:  ${And.make(it.reviseBy(announcement))!!.models}")
+                println()
+            }
+        }
+        else
+        {
+            println("no solution")
+        }
+    }
+}
+
+object ExhaustiveAnnouncementResolver
+{
+    @JvmStatic
+    fun main(args:Array<String>)
+    {
+        val input = InputStreamReader(System.`in`,"UTF-8").readText()
+
+        val problemInstances = JSONArray(input).mapIndexedNotNull()
+        {
+            index,jsonObject ->
+            jsonObject as JSONObject
+            return@mapIndexedNotNull try
+            {
+                jsonObject.toProblemInstance()
+            }
+            catch (ex:Exception)
+            {
+                println("parsing error of element at index ${index+1}: ${ex.message}")
+                null
+            }
+        }
+
+        val announcement = findAllAnnouncements(problemInstances)
+        println("announcement: ${announcement.map {it.toDnf().toParsableString()}}")
         problemInstances.forEach()
         {
-            println("initialK: ${it.initialBeliefState.map {it.toParsableString()}}")
+            println("initialK: ${(And.make(it.initialBeliefState) ?: contradiction).models}")
             println("targetK:  ${it.targetBeliefState.models}")
-            println("resultK:  ${And.make(it.reviseBy(announcement)).models}")
             println()
         }
-    }
-    else
-    {
-        println("no solution")
     }
 }
 

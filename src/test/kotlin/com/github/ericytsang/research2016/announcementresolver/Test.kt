@@ -1,9 +1,9 @@
 package com.github.ericytsang.research2016.announcementresolver
 
+import com.github.ericytsang.research2016.propositionallogic.ByDistanceAnnouncementResolutionStrategy
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Test
-import com.github.ericytsang.research2016.propositionallogic.SimpleAnnouncementResolutionStrategy
 import com.github.ericytsang.research2016.propositionallogic.toParsableString
 
 /**
@@ -45,6 +45,6 @@ class Test
     {
         val problemInstances = JSONArray(input).map() {(it as JSONObject).toProblemInstance()}
 
-        println(SimpleAnnouncementResolutionStrategy().resolve(problemInstances)?.toParsableString() ?: "no solution")
+        println(ByDistanceAnnouncementResolutionStrategy().resolve(problemInstances)?.toParsableString() ?: "no solution")
     }
 }

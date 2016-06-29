@@ -22,15 +22,16 @@ repositories {
     maven { url "https://jitpack.io" }
 }
 
+configurations.compile.resolutionStrategy.cacheChangingModulesFor(0,'seconds')
 dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-    compile "com.github.ericytsang:research2016.propositionallogic:1.0"
+    compile ("com.github.ericytsang:research2016.propositionallogic:dev-SNAPSHOT") {changing = true}
     compile group: 'org.json', name: 'json', version: '20160212'
     testCompile 'junit:junit:4.11'
     testCompile "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
 }
 
-task executable(type: Jar, dependsOn: classes) {
+task jarBruteForceSolver(type: Jar, dependsOn: classes) {
     from sourceSets.main.output
     from {configurations.runtime.collect {zipTree(it)}} {
         exclude "META-INF/*.SF"
@@ -38,6 +39,39 @@ task executable(type: Jar, dependsOn: classes) {
         exclude "META-INF/*.RSA"
     }
     manifest {
-        attributes 'Main-Class': 'research2016.announcementresolver.MainKt'
+        attributes 'Main-Class': 'com.github.ericytsang.research2016.announcementresolver.BruteForceAnnouncementResolver'
     }
+    baseName = 'bruteForceSolver'
+}
+
+task jarByDistanceSolver(type: Jar, dependsOn: classes) {
+    from sourceSets.main.output
+    from {configurations.runtime.collect {zipTree(it)}} {
+        exclude "META-INF/*.SF"
+        exclude "META-INF/*.DSA"
+        exclude "META-INF/*.RSA"
+    }
+    manifest {
+        attributes 'Main-Class': 'com.github.ericytsang.research2016.announcementresolver.ByDistanceAnnouncementResolver'
+    }
+    baseName = 'byDistanceSolver'
+}
+
+task jarExhaustiveSolver(type: Jar, dependsOn: classes) {
+    from sourceSets.main.output
+    from {configurations.runtime.collect {zipTree(it)}} {
+        exclude "META-INF/*.SF"
+        exclude "META-INF/*.DSA"
+        exclude "META-INF/*.RSA"
+    }
+    manifest {
+        attributes 'Main-Class': 'com.github.ericytsang.research2016.announcementresolver.ExhaustiveAnnouncementResolver'
+    }
+    baseName = 'exhaustiveSolver'
+}
+
+task jarAll {
+    dependsOn 'jarBruteForceSolver'
+    dependsOn 'jarByDistanceSolver'
+    dependsOn 'jarExhaustiveSolver'
 }
