@@ -6,20 +6,25 @@ import com.github.ericytsang.research2016.propositionallogic.And
 import com.github.ericytsang.research2016.propositionallogic.AnnouncementResolutionStrategy
 import com.github.ericytsang.research2016.propositionallogic.BeliefRevisionStrategy
 import com.github.ericytsang.research2016.propositionallogic.BruteForceAnnouncementResolutionStrategy
-import com.github.ericytsang.research2016.propositionallogic.ByDistanceAnnouncementResolutionStrategy
 import com.github.ericytsang.research2016.propositionallogic.ComparatorBeliefRevisionStrategy
 import com.github.ericytsang.research2016.propositionallogic.HammingDistanceComparator
+import com.github.ericytsang.research2016.propositionallogic.OrderedAnnouncementResolutionStrategy
 import com.github.ericytsang.research2016.propositionallogic.OrderedSetsComparator
 import com.github.ericytsang.research2016.propositionallogic.Proposition
 import com.github.ericytsang.research2016.propositionallogic.SatisfiabilityBeliefRevisionStrategy
 import com.github.ericytsang.research2016.propositionallogic.Variable
 import com.github.ericytsang.research2016.propositionallogic.WeightedHammingDistanceComparator
+import com.github.ericytsang.research2016.propositionallogic.and
 import com.github.ericytsang.research2016.propositionallogic.contradiction
 import com.github.ericytsang.research2016.propositionallogic.findAllAnnouncements
 import com.github.ericytsang.research2016.propositionallogic.makeFrom
 import com.github.ericytsang.research2016.propositionallogic.models
+import com.github.ericytsang.research2016.propositionallogic.not
+import com.github.ericytsang.research2016.propositionallogic.or
+import com.github.ericytsang.research2016.propositionallogic.tautology
 import com.github.ericytsang.research2016.propositionallogic.toDnf
 import com.github.ericytsang.research2016.propositionallogic.toParsableString
+import com.github.ericytsang.research2016.propositionallogic.variables
 import java.io.InputStreamReader
 
 object jsonSchema
@@ -64,7 +69,7 @@ object jsonSchema
     }
 }
 
-object ByDistanceAnnouncementResolver
+object OrderedAnnouncementResolver
 {
     @JvmStatic
     fun main(args:Array<String>)
@@ -86,7 +91,7 @@ object ByDistanceAnnouncementResolver
             }
         }
 
-        val announcement = ByDistanceAnnouncementResolutionStrategy().resolve(problemInstances)
+        val announcement = OrderedAnnouncementResolutionStrategy().resolve(problemInstances)
         if (announcement != null)
         {
             println("announcement: ${announcement.toDnf().toParsableString()}")
@@ -181,14 +186,23 @@ object ExhaustiveAnnouncementResolver
 
 fun JSONObject.toProblemInstance():AnnouncementResolutionStrategy.ProblemInstance
 {
+    val allVariables = this
+        .getJSONArray("${jsonSchema.initialK}")
+        .plus(this.getString("${jsonSchema.targetK}"))
+        .map {Proposition.makeFrom(it as String)}
+        .flatMap {it.variables}
+        .map {it or it.not}
+        .let {And.make(it) ?: tautology}
+
     val initialK:Set<Proposition> = this
         .getJSONArray("${jsonSchema.initialK}")
         .map {Proposition.makeFrom(it as String)}
+        .plus(allVariables)
         .toSet()
 
     val targetK:Proposition = this
         .getString("${jsonSchema.targetK}")
-        .let {com.github.ericytsang.research2016.propositionallogic.Proposition.makeFrom(it)}
+        .let {Proposition.makeFrom(it) and allVariables}
 
     val operator:BeliefRevisionStrategy = this
         .getJSONObject("${jsonSchema.operator}")
