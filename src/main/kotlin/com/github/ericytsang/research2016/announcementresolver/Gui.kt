@@ -42,20 +42,58 @@ import java.io.File
 import java.io.PrintWriter
 import java.nio.file.Paths
 import java.util.Optional
+import java.util.concurrent.CountDownLatch
 import kotlin.concurrent.thread
 
+// todo: extract magic strings
+// todo: comment code
 class Gui:Application()
 {
+    // GUI Strings
+
+    /**
+     * value for a [Menu] in the [menuBar].
+     */
     private val FILE_MENU_TEXT = "File"
 
+    /**
+     * value for [MenuItem.text] of a menu item that saves entered input data to
+     * a file.
+     */
     private val SAVE_MENU_ITEM_TEXT = "Save"
 
+    /**
+     * value for [MenuItem.text] of a menu item that replaces input data on the
+     * gui with data loaded from a file.
+     */
     private val LOAD_MENU_ITEM_TEXT = "Load"
 
+    // other constants
+
+    /**
+     * initial width of the window when the application starts.
+     */
     private val WINDOW_WIDTH:Double = 700.0
 
+    /**
+     * initial height of the window when the application starts.
+     */
     private val WINDOW_HEIGHT:Double = 400.0
 
+    /**
+     * spacing used between all GUI elements.
+     */
+    private val LAYOUT_SPACING:Double = Dimens.KEYLINE_SMALL.toDouble()
+
+    /**
+     * padding used between the edge of the window.
+     */
+    private val LAYOUT_PADDING:Insets = Insets(Dimens.KEYLINE_SMALL.toDouble())
+
+    /**
+     * lets the user specify the display format used for showing [Proposition]
+     * objects.
+     */
     private val displayModeComboBox = DisplayModeComboBox().apply()
     {
         // configure child nodes
@@ -66,6 +104,12 @@ class Gui:Application()
         })
     }
 
+    /**
+     * enables user to input and view initial belief states, target belief
+     * states and belief revision operators of agents. this table is also used
+     * to display the revised belief state of agents if an announcement is
+     * found.
+     */
     private val agentsTableView:EditableTableView<AgentListItem,Alert,ButtonType> = object:EditableTableView<AgentListItem,Alert,ButtonType>()
     {
         init
@@ -102,6 +146,17 @@ class Gui:Application()
                     SimpleStringProperty(it.value.actualKString)
                 }
             })
+            thread()
+            {
+                Thread.sleep(1000)
+                Platform.runLater()
+                {
+                    columns.forEach()
+                    {
+                        it.prefWidth = (width/columns.size)
+                    }
+                }
+            }
         }
 
         override fun isInputCancelled(result:Optional<ButtonType>):Boolean
@@ -139,8 +194,15 @@ class Gui:Application()
         {
             while (true)
             {
-                Thread.sleep(100)
-                isDisable = !announcementFinderThread.isAlive
+                Thread.sleep(500)
+                val threadIsAlive = announcementFinderThread.isAlive
+                val latch = CountDownLatch(1)
+                Platform.runLater()
+                {
+                    isDisable = !threadIsAlive
+                    latch.countDown()
+                }
+                latch.await()
             }
         }
     }
@@ -198,7 +260,7 @@ class Gui:Application()
         }
     }
 
-    private val menuBarPane = MenuBar().apply()
+    private val menuBar = MenuBar().apply()
     {
         val fileMenu = Menu(FILE_MENU_TEXT).apply()
         {
@@ -220,7 +282,7 @@ class Gui:Application()
         VBox.setVgrow(agentsTableView,Priority.ALWAYS)
         agentsTableView.maxHeight = Double.MAX_VALUE
 
-        spacing = Dimens.KEYLINE_SMALL.toDouble()
+        spacing = LAYOUT_SPACING
         children.addAll(agentsTableView,displayModeComboBox)
     }
 
@@ -229,7 +291,7 @@ class Gui:Application()
         HBox.setHgrow(announcementLabel,Priority.ALWAYS)
         announcementLabel.maxWidth = Double.MAX_VALUE
 
-        spacing = Dimens.KEYLINE_SMALL.toDouble()
+        spacing = LAYOUT_SPACING
         children.addAll(announcementLabel,cancelButton,findAnnouncementButton)
     }
 
@@ -240,8 +302,8 @@ class Gui:Application()
         VBox.setVgrow(this,Priority.ALWAYS)
         maxHeight = Double.MAX_VALUE
 
-        padding = Insets(Dimens.KEYLINE_SMALL.toDouble())
-        spacing = Dimens.KEYLINE_SMALL.toDouble()
+        padding = LAYOUT_PADDING
+        spacing = LAYOUT_SPACING
         children.addAll(upperPane,lowerPane)
     }
 
@@ -250,7 +312,7 @@ class Gui:Application()
     override fun start(primaryStage:Stage)
     {
         this.primaryStage = primaryStage
-        primaryStage.scene = Scene(VBox(menuBarPane,rootPane),WINDOW_WIDTH,WINDOW_HEIGHT)
+        primaryStage.scene = Scene(VBox(menuBar,rootPane),WINDOW_WIDTH,WINDOW_HEIGHT)
         primaryStage.show()
     }
 
@@ -304,7 +366,7 @@ class Gui:Application()
         }
     }
 
-    private class InputDialog(model:AgentListItem?):Alert(Alert.AlertType.NONE)
+    inner private class InputDialog(model:AgentListItem?):Alert(Alert.AlertType.NONE)
     {
         val initialKTextField = TextField()
             .apply {text = model?.problemInstance?.initialBeliefState?.map {it.toParsableString()}?.joinToString(", ") ?: ""}
@@ -322,7 +384,7 @@ class Gui:Application()
             buttonTypes.addAll(ButtonType.CANCEL,ButtonType.OK)
             dialogPane.content = VBox().apply()
             {
-                spacing = Dimens.KEYLINE_SMALL.toDouble()
+                spacing = LAYOUT_SPACING
                 children += Label("Initial belief state:")
                 children += initialKTextField
                 children += Label("Target belief state:")
