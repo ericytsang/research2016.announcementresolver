@@ -312,6 +312,7 @@ class Gui:Application()
     override fun start(primaryStage:Stage)
     {
         this.primaryStage = primaryStage
+        primaryStage.title = "Announcement Finder"
         primaryStage.scene = Scene(VBox(menuBar,rootPane),WINDOW_WIDTH,WINDOW_HEIGHT)
         primaryStage.show()
     }
