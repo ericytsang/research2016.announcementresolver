@@ -22,10 +22,10 @@ repositories {
     maven { url "https://jitpack.io" }
 }
 
-configurations.compile.resolutionStrategy.cacheChangingModulesFor(0,'seconds')
 dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-    compile ("com.github.ericytsang:research2016.propositionallogic:dev-SNAPSHOT") {changing = true}
+    compile "com.github.ericytsang:research2016.propositionallogic:dev-SNAPSHOT"
+    compile "com.github.ericytsang:lib.javafxutils:master-SNAPSHOT"
     compile group: 'org.json', name: 'json', version: '20160212'
     testCompile 'junit:junit:4.11'
     testCompile "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"

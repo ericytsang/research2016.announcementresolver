@@ -14,18 +14,23 @@ import com.github.ericytsang.research2016.propositionallogic.Proposition
 import com.github.ericytsang.research2016.propositionallogic.SatisfiabilityBeliefRevisionStrategy
 import com.github.ericytsang.research2016.propositionallogic.Variable
 import com.github.ericytsang.research2016.propositionallogic.WeightedHammingDistanceComparator
-import com.github.ericytsang.research2016.propositionallogic.and
 import com.github.ericytsang.research2016.propositionallogic.contradiction
 import com.github.ericytsang.research2016.propositionallogic.findAllAnnouncements
 import com.github.ericytsang.research2016.propositionallogic.makeFrom
 import com.github.ericytsang.research2016.propositionallogic.models
-import com.github.ericytsang.research2016.propositionallogic.not
-import com.github.ericytsang.research2016.propositionallogic.or
-import com.github.ericytsang.research2016.propositionallogic.tautology
 import com.github.ericytsang.research2016.propositionallogic.toDnf
 import com.github.ericytsang.research2016.propositionallogic.toParsableString
-import com.github.ericytsang.research2016.propositionallogic.variables
+import javafx.application.Application
 import java.io.InputStreamReader
+
+object GuiLauncher
+{
+    @JvmStatic
+    fun main(args:Array<String>)
+    {
+        Application.launch(Gui::class.java)
+    }
+}
 
 object jsonSchema
 {
@@ -56,16 +61,13 @@ object jsonSchema
          * key to the [String] that indicates what type of
          * [BeliefRevisionStrategy] the [operator] is describing.
          */
-        object name
-        {
-            override fun toString() = "name"
-            val satisfiability = "satisfiability"
-            val hammindDistance = "hamming distance"
-            val weightedHammingDistance = "weighted hamming distance"
-            val orderedSets = "ordered sets"
-            val weights = "weights"
-            val sentences = "sentences"
-        }
+        val name = "name"
+        val satisfiability = "satisfiability"
+        val hammingDistance = "hamming distance"
+        val weightedHammingDistance = "weighted hamming distance"
+        val orderedSets = "ordered sets"
+        val weights = "weights"
+        val sentences = "sentences"
     }
 }
 
@@ -186,23 +188,23 @@ object ExhaustiveAnnouncementResolver
 
 fun JSONObject.toProblemInstance():AnnouncementResolutionStrategy.ProblemInstance
 {
-    val allVariables = this
-        .getJSONArray("${jsonSchema.initialK}")
-        .plus(this.getString("${jsonSchema.targetK}"))
-        .map {Proposition.makeFrom(it as String)}
-        .flatMap {it.variables}
-        .map {it or it.not}
-        .let {And.make(it) ?: tautology}
+//    val allVariables = this
+//        .getJSONArray("${jsonSchema.initialK}")
+//        .plus(this.getString("${jsonSchema.targetK}"))
+//        .map {Proposition.makeFrom(it as String)}
+//        .flatMap {it.variables}
+//        .map {it or it.not}
+//        .let {And.make(it) ?: tautology}
 
     val initialK:Set<Proposition> = this
         .getJSONArray("${jsonSchema.initialK}")
         .map {Proposition.makeFrom(it as String)}
-        .plus(allVariables)
+//        .plus(allVariables)
         .toSet()
 
     val targetK:Proposition = this
         .getString("${jsonSchema.targetK}")
-        .let {Proposition.makeFrom(it) and allVariables}
+        .let {Proposition.makeFrom(it)/* and allVariables*/}
 
     val operator:BeliefRevisionStrategy = this
         .getJSONObject("${jsonSchema.operator}")
@@ -212,19 +214,19 @@ fun JSONObject.toProblemInstance():AnnouncementResolutionStrategy.ProblemInstanc
             val type = operatorJson.getString("${jsonSchema.operator.name}")
             return@let when (type)
             {
-                jsonSchema.operator.name.satisfiability -> SatisfiabilityBeliefRevisionStrategy()
-                jsonSchema.operator.name.hammindDistance -> ComparatorBeliefRevisionStrategy({HammingDistanceComparator(it)})
-                jsonSchema.operator.name.weightedHammingDistance ->
+                jsonSchema.operator.satisfiability -> SatisfiabilityBeliefRevisionStrategy()
+                jsonSchema.operator.hammingDistance -> ComparatorBeliefRevisionStrategy({HammingDistanceComparator(it)})
+                jsonSchema.operator.weightedHammingDistance ->
                 {
                     val weights = operatorJson
-                        .getJSONObject(jsonSchema.operator.name.weights)
+                        .getJSONObject(jsonSchema.operator.weights)
                         .let {jsonWeights -> jsonWeights.keySet().associate {Variable.make(it) to jsonWeights.getInt(it)}}
                     ComparatorBeliefRevisionStrategy({WeightedHammingDistanceComparator(it,weights)})
                 }
-                jsonSchema.operator.name.orderedSets ->
+                jsonSchema.operator.orderedSets ->
                 {
                     val orderedSets = operatorJson
-                        .getJSONArray(jsonSchema.operator.name.sentences)
+                        .getJSONArray(jsonSchema.operator.sentences)
                         .map {Proposition.makeFrom(it as String)}
                     ComparatorBeliefRevisionStrategy({OrderedSetsComparator(it,orderedSets)})
                 }
@@ -236,4 +238,75 @@ fun JSONObject.toProblemInstance():AnnouncementResolutionStrategy.ProblemInstanc
         }
 
     return AnnouncementResolutionStrategy.ProblemInstance(initialK,targetK,operator)
+}
+
+fun AnnouncementResolutionStrategy.ProblemInstance.toJSONObject():JSONObject
+{
+    val targetK = targetBeliefState
+        .let {it.toParsableString()}
+
+    val initialKs = initialBeliefState
+        .map {it.toParsableString()}
+        .let {JSONArray(it)}
+
+    val beliefRevisionStrategy = beliefRevisionStrategy
+    val operator = when (beliefRevisionStrategy)
+    {
+        is SatisfiabilityBeliefRevisionStrategy ->
+        {
+            JSONObject().apply()
+            {
+                put(jsonSchema.operator.name.toString(),jsonSchema.operator.satisfiability)
+            }
+        }
+        is ComparatorBeliefRevisionStrategy ->
+        {
+            val comparator = beliefRevisionStrategy.situationSorterFactory(emptySet())
+            when (comparator)
+            {
+                is HammingDistanceComparator ->
+                {
+                    JSONObject().apply()
+                    {
+                        put(jsonSchema.operator.name.toString(),jsonSchema.operator.hammingDistance)
+                    }
+                }
+                is WeightedHammingDistanceComparator ->
+                {
+                    JSONObject().apply()
+                    {
+                        put(jsonSchema.operator.name.toString(),jsonSchema.operator.weightedHammingDistance)
+                        val weightsJson = JSONObject()
+                        comparator.weights.forEach()
+                        {
+                            weightsJson.put(it.key.friendly,it.value)
+                        }
+                        put(jsonSchema.operator.weights,weightsJson)
+                    }
+                }
+                is OrderedSetsComparator ->
+                {
+                    JSONObject().apply()
+                    {
+                        put(jsonSchema.operator.name.toString(),jsonSchema.operator.orderedSets)
+                        val orderedSetsJson = JSONArray()
+                        comparator.orderedSets.forEach()
+                        {
+                            orderedSetsJson.put(it.toParsableString())
+                        }
+                        put(jsonSchema.operator.orderedSets,orderedSetsJson)
+                    }
+                }
+                else -> throw IllegalArgumentException("unknown beliefRevisionStrategy: $beliefRevisionStrategy")
+            }
+        }
+        else -> throw IllegalArgumentException("unknown beliefRevisionStrategy: $beliefRevisionStrategy")
+    }
+
+    return JSONObject().apply()
+    {
+        put("${jsonSchema.initialK}",initialKs)
+        put("${jsonSchema.targetK}",targetK)
+        put("${jsonSchema.operator}",operator)
+    }
 }
