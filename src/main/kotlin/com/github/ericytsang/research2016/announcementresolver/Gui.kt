@@ -260,6 +260,22 @@ class Gui:Application()
         }
     }
 
+    private val commitButton = Button().apply()
+    {
+        text = "Commit"
+        onAction = EventHandler()
+        {
+            val newListItems = agentsTableView.items.map()
+            {
+                val newProblemInstance = it.problemInstance.copy(initialBeliefState = it.actualK)
+                AgentListItem(newProblemInstance,it.revisionFunctionConfigPanel,it.transform)
+            }
+            agentsTableView.items.clear()
+            agentsTableView.items.addAll(newListItems)
+            agentsTableView.refresh()
+        }
+    }
+
     private val menuBar = MenuBar().apply()
     {
         val fileMenu = Menu(FILE_MENU_TEXT).apply()
@@ -292,7 +308,7 @@ class Gui:Application()
         announcementLabel.maxWidth = Double.MAX_VALUE
 
         spacing = LAYOUT_SPACING
-        children.addAll(announcementLabel,cancelButton,findAnnouncementButton)
+        children.addAll(announcementLabel,cancelButton,findAnnouncementButton,commitButton)
     }
 
     private val rootPane = VBox().apply()
