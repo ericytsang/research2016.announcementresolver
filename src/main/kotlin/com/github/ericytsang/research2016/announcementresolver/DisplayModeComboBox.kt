@@ -4,7 +4,6 @@ import com.github.ericytsang.research2016.propositionallogic.And
 import com.github.ericytsang.research2016.propositionallogic.Proposition
 import com.github.ericytsang.research2016.propositionallogic.Variable
 import com.github.ericytsang.research2016.propositionallogic.and
-import com.github.ericytsang.research2016.propositionallogic.models
 import com.github.ericytsang.research2016.propositionallogic.not
 import com.github.ericytsang.research2016.propositionallogic.or
 import com.github.ericytsang.research2016.propositionallogic.tautology

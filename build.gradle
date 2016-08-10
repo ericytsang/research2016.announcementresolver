@@ -24,7 +24,7 @@ repositories {
 
 dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-    compile "com.github.ericytsang:research2016.propositionallogic:dev-SNAPSHOT"
+    compile "com.github.ericytsang:research2016.propositionallogic:jvm_2.0"
     compile "com.github.ericytsang:lib.javafxutils:master-SNAPSHOT"
     compile group: 'org.json', name: 'json', version: '20160212'
     testCompile 'junit:junit:4.11'

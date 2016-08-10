@@ -11,7 +11,6 @@ import com.github.ericytsang.research2016.propositionallogic.Variable
 import com.github.ericytsang.research2016.propositionallogic.makeFrom
 import com.github.ericytsang.research2016.propositionallogic.toDnf
 import com.github.ericytsang.research2016.propositionallogic.toParsableString
-import com.github.ericytsang.research2016.propositionallogic.variables
 import com.sun.javafx.collections.ObservableListWrapper
 import javafx.application.Application
 import javafx.application.Platform
