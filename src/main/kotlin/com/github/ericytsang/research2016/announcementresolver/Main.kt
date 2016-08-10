@@ -17,7 +17,6 @@ import com.github.ericytsang.research2016.propositionallogic.WeightedHammingDist
 import com.github.ericytsang.research2016.propositionallogic.contradiction
 import com.github.ericytsang.research2016.propositionallogic.findAllAnnouncements
 import com.github.ericytsang.research2016.propositionallogic.makeFrom
-import com.github.ericytsang.research2016.propositionallogic.models
 import com.github.ericytsang.research2016.propositionallogic.toDnf
 import com.github.ericytsang.research2016.propositionallogic.toParsableString
 import javafx.application.Application
@@ -220,7 +219,7 @@ fun JSONObject.toProblemInstance():AnnouncementResolutionStrategy.ProblemInstanc
                 {
                     val weights = operatorJson
                         .getJSONObject(jsonSchema.operator.weights)
-                        .let {jsonWeights -> jsonWeights.keySet().associate {Variable.make(it) to jsonWeights.getInt(it)}}
+                        .let {jsonWeights -> jsonWeights.keySet().associate {Variable.fromString(it) to jsonWeights.getInt(it)}}
                     ComparatorBeliefRevisionStrategy({WeightedHammingDistanceComparator(it,weights)})
                 }
                 jsonSchema.operator.orderedSets ->

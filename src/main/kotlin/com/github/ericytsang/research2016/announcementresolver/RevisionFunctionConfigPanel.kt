@@ -1,23 +1,18 @@
 package com.github.ericytsang.research2016.announcementresolver
 
 import com.sun.javafx.collections.ObservableListWrapper
-import javafx.application.Platform
 import javafx.beans.InvalidationListener
 import javafx.event.EventHandler
 import javafx.scene.Node
-import javafx.scene.Parent
 import javafx.scene.control.Alert
 import javafx.scene.control.Button
-import javafx.scene.control.ButtonType
 import javafx.scene.control.ComboBox
-import javafx.scene.control.Label
 import javafx.scene.control.TextInputDialog
 import javafx.scene.layout.Priority
 import javafx.scene.layout.VBox
 import com.github.ericytsang.lib.collections.getRandom
 import com.github.ericytsang.lib.javafxutils.EditableListView
 import com.github.ericytsang.research2016.beliefrevisor.gui.Dimens
-import com.github.ericytsang.research2016.propositionallogic.AnnouncementResolutionStrategy
 import com.github.ericytsang.research2016.propositionallogic.BeliefRevisionStrategy
 import com.github.ericytsang.research2016.propositionallogic.ComparatorBeliefRevisionStrategy
 import com.github.ericytsang.research2016.propositionallogic.HammingDistanceComparator
@@ -28,7 +23,6 @@ import com.github.ericytsang.research2016.propositionallogic.SatisfiabilityBelie
 import com.github.ericytsang.research2016.propositionallogic.State
 import com.github.ericytsang.research2016.propositionallogic.Variable
 import com.github.ericytsang.research2016.propositionallogic.WeightedHammingDistanceComparator
-import com.github.ericytsang.research2016.propositionallogic.fromState
 import com.github.ericytsang.research2016.propositionallogic.makeFrom
 import com.github.ericytsang.research2016.propositionallogic.toParsableString
 import java.io.Serializable
@@ -231,7 +225,7 @@ class RevisionFunctionConfigPanel():VBox()
             return ComparatorBeliefRevisionStrategy()
             {
                 initialBeliefState:Set<Proposition> ->
-                val weights = settingsPanel.items.associate {Variable.make(it.variableName) to it.weight}
+                val weights = settingsPanel.items.associate {Variable.fromString(it.variableName) to it.weight}
                 WeightedHammingDistanceComparator(initialBeliefState,weights)
             }
         }
@@ -278,7 +272,7 @@ class RevisionFunctionConfigPanel():VBox()
             {
                 val dialogTitles = "Generate Random Ordering"
                 val variablesPrompt = "Enter a comma separated list of all the variables below."
-                val variablesParser = {string:String -> string.split(",").map {Variable.make(it.trim())}.toSet()}
+                val variablesParser = {string:String -> string.split(",").map {Variable.fromString(it.trim())}.toSet()}
                 val numBucketsPrompt = "Enter the number of buckets to sort generated states into."
                 val numBucketsParser = {string:String -> string.toInt()}
 
