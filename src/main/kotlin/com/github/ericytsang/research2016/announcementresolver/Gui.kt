@@ -395,6 +395,8 @@ class Gui:Application()
 
         init
         {
+            dialogPane.minWidth = 400.0
+            dialogPane.minHeight = 400.0
             isResizable = true
             headerText = " "
             buttonTypes.addAll(ButtonType.CANCEL,ButtonType.OK)
