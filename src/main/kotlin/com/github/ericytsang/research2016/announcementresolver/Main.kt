@@ -48,8 +48,8 @@ object GuiLauncher
     {
         override fun start(primaryStage:Stage)
         {
-            val loader = FXMLLoader(javaClass.classLoader.getResource("agentswindow.fxml"))
-            val root = loader.load<Parent>()
+            val root = FXMLLoader(javaClass.classLoader.getResource("agentswindow.fxml"))
+                .load<Parent>()
 
             primaryStage.title = "Announcement Finder"
             primaryStage.scene = Scene(root,WINDOW_WIDTH,WINDOW_HEIGHT)

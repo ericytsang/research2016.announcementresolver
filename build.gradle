@@ -70,8 +70,22 @@ task jarExhaustiveSolver(type: Jar, dependsOn: classes) {
     baseName = 'exhaustiveSolver'
 }
 
+task jarGui(type: Jar, dependsOn: classes) {
+    from sourceSets.main.output
+    from {configurations.runtime.collect {zipTree(it)}} {
+        exclude "META-INF/*.SF"
+        exclude "META-INF/*.DSA"
+        exclude "META-INF/*.RSA"
+    }
+    manifest {
+        attributes 'Main-Class': 'com.github.ericytsang.research2016.announcementresolver.GuiLauncher'
+    }
+    baseName = 'Announcement finder'
+}
+
 task jarAll {
-    dependsOn 'jarBruteForceSolver'
-    dependsOn 'jarByDistanceSolver'
-    dependsOn 'jarExhaustiveSolver'
+    dependsOn jarBruteForceSolver
+    dependsOn jarOrderedSolver
+    dependsOn jarExhaustiveSolver
+    dependsOn jarGui
 }
