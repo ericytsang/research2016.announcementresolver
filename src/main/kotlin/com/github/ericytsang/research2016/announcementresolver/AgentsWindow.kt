@@ -1,52 +1,39 @@
 package com.github.ericytsang.research2016.announcementresolver
 
-import com.github.ericytsang.lib.javafxutils.EditableTableView
 import com.github.ericytsang.research2016.beliefrevisor.gui.Dimens
-import com.github.ericytsang.research2016.propositionallogic.AnnouncementResolutionStrategy
 import com.github.ericytsang.research2016.propositionallogic.BruteForceAnnouncementResolutionStrategy
 import com.github.ericytsang.research2016.propositionallogic.ComparatorBeliefRevisionStrategy
 import com.github.ericytsang.research2016.propositionallogic.OrderedAnnouncementResolutionStrategy
 import com.github.ericytsang.research2016.propositionallogic.Proposition
-import com.github.ericytsang.research2016.propositionallogic.Variable
-import com.github.ericytsang.research2016.propositionallogic.makeFrom
 import com.github.ericytsang.research2016.propositionallogic.toDnf
-import com.github.ericytsang.research2016.propositionallogic.toParsableString
 import com.sun.javafx.collections.ObservableListWrapper
 import javafx.application.Application
 import javafx.application.Platform
 import javafx.beans.InvalidationListener
-import javafx.beans.property.SimpleStringProperty
-import javafx.beans.value.ObservableValue
 import javafx.event.EventHandler
 import javafx.geometry.Insets
 import javafx.scene.Scene
-import javafx.scene.control.Alert
 import javafx.scene.control.Button
-import javafx.scene.control.ButtonType
 import javafx.scene.control.Label
 import javafx.scene.control.Menu
 import javafx.scene.control.MenuBar
 import javafx.scene.control.MenuItem
-import javafx.scene.control.TableColumn
-import javafx.scene.control.TextField
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Priority
 import javafx.scene.layout.VBox
 import javafx.stage.FileChooser
 import javafx.stage.Stage
-import javafx.util.Callback
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.io.PrintWriter
 import java.nio.file.Paths
-import java.util.Optional
 import java.util.concurrent.CountDownLatch
 import kotlin.concurrent.thread
 
 // todo: extract magic strings
 // todo: comment code
-class Gui:Application()
+class AgentsWindow:Application()
 {
     // GUI Strings
 
@@ -98,8 +85,7 @@ class Gui:Application()
         // configure child nodes
         valueProperty().addListener(InvalidationListener()
         {
-            agentsTableView.items.forEach {it.transform = value.transform}
-            agentsTableView.refresh()
+            agentsTableView.beliefStateToString = value.transform
         })
     }
 
@@ -109,79 +95,23 @@ class Gui:Application()
      * to display the revised belief state of agents if an announcement is
      * found.
      */
-    private val agentsTableView:EditableTableView<AgentListItem,Alert,ButtonType> = object:EditableTableView<AgentListItem,Alert,ButtonType>()
-    {
-        init
-        {
-            columns.add(TableColumn<AgentListItem,String>().apply()
-            {
-                text = "Initial belief state"
-                cellValueFactory = Callback<TableColumn.CellDataFeatures<AgentListItem,String>,ObservableValue<String>>()
-                {
-                    SimpleStringProperty(it.value.initialKString)
-                }
-            })
-            columns.add(TableColumn<AgentListItem,String>().apply()
-            {
-                text = "Target belief state"
-                cellValueFactory = Callback<TableColumn.CellDataFeatures<AgentListItem,String>,ObservableValue<String>>()
-                {
-                    SimpleStringProperty(it.value.targetKString)
-                }
-            })
-            columns.add(TableColumn<AgentListItem,String>().apply()
-            {
-                text = "Belief revision operator"
-                cellValueFactory = Callback<TableColumn.CellDataFeatures<AgentListItem,String>,ObservableValue<String>>()
-                {
-                    SimpleStringProperty(it.value.operatorString)
-                }
-            })
-            columns.add(TableColumn<AgentListItem,String>().apply()
-            {
-                text = "Revised belief state"
-                cellValueFactory = Callback<TableColumn.CellDataFeatures<AgentListItem,String>,ObservableValue<String>>()
-                {
-                    SimpleStringProperty(it.value.actualKString)
-                }
-            })
-            thread()
-            {
-                Thread.sleep(1000)
-                Platform.runLater()
-                {
-                    columns.forEach()
-                    {
-                        it.prefWidth = (width/columns.size)
-                    }
-                }
-            }
-        }
+    private val agentsTableView = AgentsTableView(LAYOUT_SPACING)
 
-        override fun isInputCancelled(result:Optional<ButtonType>):Boolean
-        {
-            return result.get() != ButtonType.OK
-        }
-
-        override fun makeInputDialog(model:AgentListItem?):Alert
-        {
-            return InputDialog(model)
-        }
-
-        override fun tryParseInput(inputDialog:Alert):AgentListItem
-        {
-            inputDialog as InputDialog
-            val initialK = inputDialog.initialKTextField.text.split(",").map {Proposition.makeFrom(it)}.toSet()
-            val targetK = Proposition.makeFrom(inputDialog.targetKTextField.text)
-            val beliefRevisionStrategy = inputDialog.operatorInputPane.beliefRevisionStrategy ?: throw IllegalArgumentException("A belief revision operation must be specified")
-            return AgentListItem(AnnouncementResolutionStrategy.ProblemInstance(initialK,targetK,beliefRevisionStrategy),inputDialog.operatorInputPane,displayModeComboBox.value.transform)
-        }
-    }
-
+    /**
+     * used to display the announcement if one is found or an error message
+     * otherwise.
+     */
     private val announcementLabel = Label()
 
+    /**
+     * thread used to calculate announcement. initialized to a thread to get rid
+     * of the need to check for null.
+     */
     private var announcementFinderThread = thread {}
 
+    /**
+     * cancel button that allows user to abort of the announcement calculations.
+     */
     private val cancelButton = Button().apply()
     {
         text = "Cancel"
@@ -206,6 +136,10 @@ class Gui:Application()
         }
     }
 
+    /**
+     * button used to begin finding the announcement that solves for the current
+     * input.
+     */
     private val findAnnouncementButton = Button().apply()
     {
         text = "Find announcement"
@@ -240,10 +174,9 @@ class Gui:Application()
                     // display the revised belief states
                     if (announcement != null)
                     {
-                        agentsTableView.items.forEach()
-                        {
-                            it.actualK = it.problemInstance.reviseBy(announcement)
-                        }
+                        agentsTableView.items = agentsTableView.items
+                            .map {it.copy(actualK = it.problemInstance.reviseBy(announcement))}
+                            .let {ObservableListWrapper(it)}
                         Platform.runLater {agentsTableView.refresh()}
                     }
                 }
@@ -267,7 +200,7 @@ class Gui:Application()
             val newListItems = agentsTableView.items.map()
             {
                 val newProblemInstance = it.problemInstance.copy(initialBeliefState = it.actualK)
-                AgentListItem(newProblemInstance,it.revisionFunctionConfigPanel,it.transform)
+                AgentsTableView.RowData(newProblemInstance,it.revisionFunctionConfigPanel,emptySet())
             }
             agentsTableView.items.clear()
             agentsTableView.items.addAll(newListItems)
@@ -376,79 +309,9 @@ class Gui:Application()
                 .let {JSONArray(it)}
                 .map {it as JSONObject}
                 .map {it.toProblemInstance()}
-                .map {AgentListItem(it,RevisionFunctionConfigPanel(),displayModeComboBox.value.transform)}
+                .map {AgentsTableView.RowData(it,RevisionFunctionConfigPanel(),emptySet())}
                 .apply {forEach {it.revisionFunctionConfigPanel.setValuesFrom(it.problemInstance.beliefRevisionStrategy)}}
                 .let {ObservableListWrapper(it)}
-        }
-    }
-
-    inner private class InputDialog(model:AgentListItem?):Alert(Alert.AlertType.NONE)
-    {
-        val initialKTextField = TextField()
-            .apply {text = model?.problemInstance?.initialBeliefState?.map {it.toParsableString()}?.joinToString(", ") ?: ""}
-
-        val targetKTextField = TextField()
-            .apply {text = model?.problemInstance?.targetBeliefState?.toParsableString() ?: ""}
-
-        val operatorInputPane = model?.revisionFunctionConfigPanel
-            ?: RevisionFunctionConfigPanel()
-
-        init
-        {
-            dialogPane.minWidth = 400.0
-            dialogPane.minHeight = 400.0
-            isResizable = true
-            headerText = " "
-            buttonTypes.addAll(ButtonType.CANCEL,ButtonType.OK)
-            dialogPane.content = VBox().apply()
-            {
-                spacing = LAYOUT_SPACING
-                children += Label("Initial belief state:")
-                children += initialKTextField
-                children += Label("Target belief state:")
-                children += targetKTextField
-                children += Label("Belief revision operator:")
-                children += operatorInputPane
-            }
-        }
-    }
-
-    inner private class AgentListItem(val problemInstance:AnnouncementResolutionStrategy.ProblemInstance,val revisionFunctionConfigPanel:RevisionFunctionConfigPanel,var transform:(List<Proposition>,Set<Variable>)->List<String>)
-    {
-        private val allVariables:Set<Variable> get()
-        {
-            val propositions = mutableSetOf<Proposition>()
-            propositions += agentsTableView.items.flatMap {it.problemInstance.initialBeliefState}
-            propositions += agentsTableView.items.map {it.problemInstance.targetBeliefState}
-            return propositions.flatMap {it.variables}.toSet()
-        }
-
-        var actualK:Set<Proposition> = emptySet()
-
-        val initialKString:String get()
-        {
-            return problemInstance.initialBeliefState
-                .let {transform(it.toList(),allVariables)}
-                .joinToString("\n")
-        }
-
-        val targetKString:String get()
-        {
-            return problemInstance.targetBeliefState
-                .let {transform(listOf(it),allVariables)}
-                .joinToString("\n")
-        }
-
-        val operatorString:String get()
-        {
-            return revisionFunctionConfigPanel.revisionOperatorComboBox.value.name
-        }
-
-        val actualKString:String get()
-        {
-            return actualK
-                .let {transform(it.toList(),allVariables)}
-                .joinToString("\n")
         }
     }
 }

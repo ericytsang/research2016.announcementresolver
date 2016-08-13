@@ -27,7 +27,7 @@ object GuiLauncher
     @JvmStatic
     fun main(args:Array<String>)
     {
-        Application.launch(Gui::class.java)
+        Application.launch(AgentsWindow::class.java)
     }
 }
 
@@ -187,23 +187,14 @@ object ExhaustiveAnnouncementResolver
 
 fun JSONObject.toProblemInstance():AnnouncementResolutionStrategy.ProblemInstance
 {
-//    val allVariables = this
-//        .getJSONArray("${jsonSchema.initialK}")
-//        .plus(this.getString("${jsonSchema.targetK}"))
-//        .map {Proposition.makeFrom(it as String)}
-//        .flatMap {it.variables}
-//        .map {it or it.not}
-//        .let {And.make(it) ?: tautology}
-
     val initialK:Set<Proposition> = this
         .getJSONArray("${jsonSchema.initialK}")
         .map {Proposition.makeFrom(it as String)}
-//        .plus(allVariables)
         .toSet()
 
     val targetK:Proposition = this
         .getString("${jsonSchema.targetK}")
-        .let {Proposition.makeFrom(it)/* and allVariables*/}
+        .let {Proposition.makeFrom(it)}
 
     val operator:BeliefRevisionStrategy = this
         .getJSONObject("${jsonSchema.operator}")
