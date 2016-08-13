@@ -20,14 +20,41 @@ import com.github.ericytsang.research2016.propositionallogic.makeFrom
 import com.github.ericytsang.research2016.propositionallogic.toDnf
 import com.github.ericytsang.research2016.propositionallogic.toParsableString
 import javafx.application.Application
+import javafx.fxml.FXMLLoader
+import javafx.scene.Parent
+import javafx.scene.Scene
+import javafx.stage.Stage
 import java.io.InputStreamReader
 
 object GuiLauncher
 {
+    /**
+     * initial width of the window when the application starts.
+     */
+    private val WINDOW_WIDTH:Double = 700.0
+
+    /**
+     * initial height of the window when the application starts.
+     */
+    private val WINDOW_HEIGHT:Double = 400.0
+
     @JvmStatic
     fun main(args:Array<String>)
     {
-        Application.launch(AgentsWindow::class.java)
+        Application.launch(App::class.java)
+    }
+
+    class App:Application()
+    {
+        override fun start(primaryStage:Stage)
+        {
+            val loader = FXMLLoader(javaClass.classLoader.getResource("agentswindow.fxml"))
+            val root = loader.load<Parent>()
+
+            primaryStage.title = "Announcement Finder"
+            primaryStage.scene = Scene(root,WINDOW_WIDTH,WINDOW_HEIGHT)
+            primaryStage.show()
+        }
     }
 }
 

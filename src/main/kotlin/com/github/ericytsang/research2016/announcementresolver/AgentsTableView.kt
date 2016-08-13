@@ -1,6 +1,7 @@
 package com.github.ericytsang.research2016.announcementresolver
 
 import com.github.ericytsang.lib.javafxutils.EditableTableView
+import com.github.ericytsang.research2016.beliefrevisor.gui.Dimens
 import com.github.ericytsang.research2016.propositionallogic.AnnouncementResolutionStrategy
 import com.github.ericytsang.research2016.propositionallogic.Proposition
 import com.github.ericytsang.research2016.propositionallogic.Variable
@@ -9,6 +10,7 @@ import com.github.ericytsang.research2016.propositionallogic.toParsableString
 import javafx.application.Platform
 import javafx.beans.property.SimpleStringProperty
 import javafx.beans.value.ObservableValue
+import javafx.fxml.FXMLLoader
 import javafx.scene.control.Alert
 import javafx.scene.control.ButtonType
 import javafx.scene.control.Label
@@ -19,7 +21,7 @@ import javafx.util.Callback
 import java.util.Optional
 import kotlin.concurrent.thread
 
-class AgentsTableView(val layoutSpacing:Double):EditableTableView<AgentsTableView.RowData,Alert,ButtonType>()
+class AgentsTableView():EditableTableView<AgentsTableView.RowData,Alert,ButtonType>()
 {
     init
     {
@@ -69,6 +71,10 @@ class AgentsTableView(val layoutSpacing:Double):EditableTableView<AgentsTableVie
                 }
             }
         }
+
+        val fxmlLoader = FXMLLoader()
+        fxmlLoader.setRoot(this)
+        fxmlLoader.setController(this)
     }
 
     override fun isInputCancelled(result:Optional<ButtonType>):Boolean
@@ -78,7 +84,7 @@ class AgentsTableView(val layoutSpacing:Double):EditableTableView<AgentsTableVie
 
     override fun makeInputDialog(model:RowData?):Alert
     {
-        return InputDialog(model,layoutSpacing)
+        return InputDialog(model)
     }
 
     override fun tryParseInput(inputDialog:Alert):RowData
@@ -140,7 +146,7 @@ class AgentsTableView(val layoutSpacing:Double):EditableTableView<AgentsTableVie
         return propositions.flatMap {it.variables}.toSet()
     }
 
-    inner private class InputDialog(model:RowData?,layoutSpacing:Double):Alert(Alert.AlertType.NONE)
+    inner private class InputDialog(model:RowData?):Alert(Alert.AlertType.NONE)
     {
         val initialKTextField = TextField()
             .apply {text = model?.problemInstance?.initialBeliefState?.map {it.toParsableString()}?.joinToString(", ") ?: ""}
@@ -160,7 +166,7 @@ class AgentsTableView(val layoutSpacing:Double):EditableTableView<AgentsTableVie
             buttonTypes.addAll(ButtonType.CANCEL,ButtonType.OK)
             dialogPane.content = VBox().apply()
             {
-                spacing = layoutSpacing
+                spacing = Dimens.KEYLINE_SMALL.toDouble()
                 children += Label("Initial belief state:")
                 children += initialKTextField
                 children += Label("Target belief state:")
