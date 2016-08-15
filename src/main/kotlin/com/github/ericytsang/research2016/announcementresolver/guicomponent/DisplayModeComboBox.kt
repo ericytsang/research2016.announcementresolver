@@ -1,4 +1,4 @@
-package com.github.ericytsang.research2016.announcementresolver
+package com.github.ericytsang.research2016.announcementresolver.guicomponent
 
 import com.github.ericytsang.research2016.propositionallogic.And
 import com.github.ericytsang.research2016.propositionallogic.Proposition
@@ -32,8 +32,8 @@ class DisplayModeComboBox:ComboBox<DisplayModeComboBox.Option>()
                 it,variables ->
                 if (it.isNotEmpty())
                 {
-                    val tautologies = variables.map {it or it.not}.let {And.make(it) ?: tautology}
-                    (And.make(it)!! and tautologies).models.map {it.toString()}
+                    val tautologies = variables.map {it or it.not}.let {And.Companion.make(it) ?: tautology}
+                    (And.Companion.make(it)!! and tautologies).models.map {it.toString()}
                 }
                 else
                 {

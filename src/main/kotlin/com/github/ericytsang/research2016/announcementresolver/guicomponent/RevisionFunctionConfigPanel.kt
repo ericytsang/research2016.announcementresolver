@@ -1,4 +1,4 @@
-package com.github.ericytsang.research2016.announcementresolver
+package com.github.ericytsang.research2016.announcementresolver.guicomponent
 
 import com.sun.javafx.collections.ObservableListWrapper
 import javafx.beans.InvalidationListener
@@ -225,7 +225,7 @@ class RevisionFunctionConfigPanel():VBox()
             return ComparatorBeliefRevisionStrategy()
             {
                 initialBeliefState:Set<Proposition> ->
-                val weights = settingsPanel.items.associate {Variable.fromString(it.variableName) to it.weight}
+                val weights = settingsPanel.items.associate {Variable.Companion.fromString(it.variableName) to it.weight}
                 WeightedHammingDistanceComparator(initialBeliefState,weights)
             }
         }
@@ -272,7 +272,7 @@ class RevisionFunctionConfigPanel():VBox()
             {
                 val dialogTitles = "Generate Random Ordering"
                 val variablesPrompt = "Enter a comma separated list of all the variables below."
-                val variablesParser = {string:String -> string.split(",").map {Variable.fromString(it.trim())}.toSet()}
+                val variablesParser = {string:String -> string.split(",").map {Variable.Companion.fromString(it.trim())}.toSet()}
                 val numBucketsPrompt = "Enter the number of buckets to sort generated states into."
                 val numBucketsParser = {string:String -> string.toInt()}
 
@@ -283,8 +283,8 @@ class RevisionFunctionConfigPanel():VBox()
                 // randomized list of all possible states involving all
                 // variables in variables represented by variable
                 // conjunctions.
-                val allStates = State.permutationsOf(variables)
-                    .map {Proposition.fromState(it)}
+                val allStates = State.Companion.permutationsOf(variables)
+                    .map {Proposition.Companion.fromState(it)}
                     .toMutableList()
                     .apply {Collections.shuffle(this)}
                     .iterator()
@@ -307,7 +307,7 @@ class RevisionFunctionConfigPanel():VBox()
                         }
                         allStates.forEach {getRandom().add(it)}
                     }
-                    .filter {it.isNotEmpty()}.map {Or.make(it.toList())}
+                    .filter {it.isNotEmpty()}.map {Or.Companion.make(it.toList())}
 
                 // add all the dnf sentences to the listView.
                 listview.items.clear()

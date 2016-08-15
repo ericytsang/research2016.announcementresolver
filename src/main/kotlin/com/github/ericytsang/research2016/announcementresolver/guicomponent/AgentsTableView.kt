@@ -1,4 +1,4 @@
-package com.github.ericytsang.research2016.announcementresolver
+package com.github.ericytsang.research2016.announcementresolver.guicomponent
 
 import com.github.ericytsang.lib.javafxutils.EditableTableView
 import com.github.ericytsang.research2016.beliefrevisor.gui.Dimens
@@ -10,7 +10,6 @@ import com.github.ericytsang.research2016.propositionallogic.toParsableString
 import javafx.application.Platform
 import javafx.beans.property.SimpleStringProperty
 import javafx.beans.value.ObservableValue
-import javafx.fxml.FXMLLoader
 import javafx.scene.control.Alert
 import javafx.scene.control.ButtonType
 import javafx.scene.control.Label
@@ -31,7 +30,10 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData,Alert,ButtonTy
             text = "Initial belief state"
             cellValueFactory = Callback<TableColumn.CellDataFeatures<RowData,String>,ObservableValue<String>>()
             {
-                SimpleStringProperty(it.value.initialKString)
+                it.value.problemInstance.initialBeliefState
+                    .let {beliefStateToString(it.toList(),allVariables)}
+                    .joinToString("\n")
+                    .let {SimpleStringProperty(it)}
             }
         })
         columns.add(TableColumn<RowData,String>().apply()
@@ -39,7 +41,10 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData,Alert,ButtonTy
             text = "Target belief state"
             cellValueFactory = Callback<TableColumn.CellDataFeatures<RowData,String>,ObservableValue<String>>()
             {
-                SimpleStringProperty(it.value.targetKString)
+                it.value.problemInstance.targetBeliefState
+                    .let {beliefStateToString(listOf(it),allVariables)}
+                    .joinToString("\n")
+                    .let {SimpleStringProperty(it)}
             }
         })
         columns.add(TableColumn<RowData,String>().apply()
@@ -47,7 +52,8 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData,Alert,ButtonTy
             text = "Belief revision operator"
             cellValueFactory = Callback<TableColumn.CellDataFeatures<RowData,String>,ObservableValue<String>>()
             {
-                SimpleStringProperty(it.value.operatorString)
+                it.value.revisionFunctionConfigPanel.revisionOperatorComboBox.value.name
+                    .let {SimpleStringProperty(it)}
             }
         })
         columns.add(TableColumn<RowData,String>().apply()
@@ -55,7 +61,10 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData,Alert,ButtonTy
             text = "Revised belief state"
             cellValueFactory = Callback<TableColumn.CellDataFeatures<RowData,String>,ObservableValue<String>>()
             {
-                SimpleStringProperty(it.value.actualKString)
+                it.value.actualK
+                    .let {beliefStateToString(it.toList(),allVariables)}
+                    .joinToString("\n")
+                    .let {SimpleStringProperty(it)}
             }
         })
 
@@ -71,10 +80,6 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData,Alert,ButtonTy
                 }
             }
         }
-
-        val fxmlLoader = FXMLLoader()
-        fxmlLoader.setRoot(this)
-        fxmlLoader.setController(this)
     }
 
     override fun isInputCancelled(result:Optional<ButtonType>):Boolean
@@ -112,32 +117,6 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData,Alert,ButtonTy
         val revisionFunctionConfigPanel:RevisionFunctionConfigPanel,
         val actualK:Set<Proposition>)
 
-    private val RowData.initialKString:String get()
-    {
-        return problemInstance.initialBeliefState
-            .let {beliefStateToString(it.toList(),allVariables)}
-            .joinToString("\n")
-    }
-
-    private val RowData.targetKString:String get()
-    {
-        return problemInstance.targetBeliefState
-            .let {beliefStateToString(listOf(it),allVariables)}
-            .joinToString("\n")
-    }
-
-    private val RowData.operatorString:String get()
-    {
-        return revisionFunctionConfigPanel.revisionOperatorComboBox.value.name
-    }
-
-    private val RowData.actualKString:String get()
-    {
-        return actualK
-            .let {beliefStateToString(it.toList(),allVariables)}
-            .joinToString("\n")
-    }
-
     private val allVariables:Set<Variable> get()
     {
         val propositions = mutableSetOf<Proposition>()
@@ -146,7 +125,7 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData,Alert,ButtonTy
         return propositions.flatMap {it.variables}.toSet()
     }
 
-    inner private class InputDialog(model:RowData?):Alert(Alert.AlertType.NONE)
+    inner private class InputDialog(model:RowData?):Alert(AlertType.NONE)
     {
         val initialKTextField = TextField()
             .apply {text = model?.problemInstance?.initialBeliefState?.map {it.toParsableString()}?.joinToString(", ") ?: ""}

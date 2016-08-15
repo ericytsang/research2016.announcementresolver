@@ -1,0 +1,23 @@
+<?import javafx.scene.layout.VBox?>
+<?import com.github.ericytsang.research2016.announcementresolver.guicomponent.BehavioralDictionaryTableView?>
+<?import javafx.geometry.Insets?>
+<VBox
+    xmlns:fx="http://javafx.com/fxml"
+    fx:controller="com.github.ericytsang.research2016.announcementresolver.BehaviouralDictionaryWindowController"
+    prefWidth="400.0"
+    prefHeight="400.0">
+    <padding>
+        <Insets
+            top="8.0"
+            left="8.0"
+            bottom="8.0"
+            right="8.0"/>
+        <Insets
+            top="8.0"
+            left="8.0"
+            bottom="8.0"
+            right="8.0"/>
+    </padding>
+    <BehavioralDictionaryTableView
+        fx:id="behaviouralDictionaryTableView"/>
+</VBox>
