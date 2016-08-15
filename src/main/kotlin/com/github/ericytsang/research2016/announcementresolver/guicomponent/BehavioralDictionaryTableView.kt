@@ -22,7 +22,7 @@ import java.util.Optional
 /**
  * Created by surpl on 8/13/2016.
  */
-class BehavioralDictionaryTableView:EditableTableView<BehavioralDictionaryTableView.RowData,Alert,ButtonType>()
+class BehavioralDictionaryTableView:EditableTableView<BehavioralDictionaryTableView.RowData>()
 {
     init
     {
@@ -46,17 +46,38 @@ class BehavioralDictionaryTableView:EditableTableView<BehavioralDictionaryTableV
         })
     }
 
-    override fun isInputCancelled(result:Optional<ButtonType>):Boolean
+    override fun createItem(previousInput:RowData?):RowData?
+    {
+        val inputDialog = makeInputDialog(previousInput)
+        while (!isInputCancelled(inputDialog.showAndWait()))
+        {
+            try
+            {
+                return tryParseInput(inputDialog)
+            }
+            catch (ex:Exception)
+            {
+                val alert = Alert(Alert.AlertType.ERROR)
+                alert.title = "Invalid Input"
+                alert.headerText = "Invalid input format."
+                alert.contentText = ex.message
+                alert.showAndWait()
+            }
+        }
+        return null
+    }
+
+    private fun isInputCancelled(result:Optional<ButtonType>):Boolean
     {
         return result.get() != ButtonType.OK
     }
 
-    override fun makeInputDialog(model:RowData?):Alert
+    private fun makeInputDialog(model:RowData?):Alert
     {
         return InputDialog(model)
     }
 
-    override fun tryParseInput(inputDialog:Alert):RowData
+    private fun tryParseInput(inputDialog:Alert):RowData
     {
         inputDialog as InputDialog
         return RowData(

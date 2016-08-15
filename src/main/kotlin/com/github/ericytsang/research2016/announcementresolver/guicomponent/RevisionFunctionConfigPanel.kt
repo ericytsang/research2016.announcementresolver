@@ -151,14 +151,35 @@ class RevisionFunctionConfigPanel():VBox()
 
     private inner class WeightedHammingDistanceOption:Option("Weighted Hamming Distance")
     {
-        override val settingsPanel = object:EditableListView<Mapping,TextInputDialog,String>()
+        override val settingsPanel = object:EditableListView<Mapping>()
         {
             init
             {
                 setVgrow(this,Priority.ALWAYS)
             }
 
-            override fun tryParseInput(inputDialog:TextInputDialog):Mapping
+            override fun createItem(previousInput:Mapping?):Mapping?
+            {
+                val inputDialog = makeInputDialog(previousInput)
+                while (!isInputCancelled(inputDialog.showAndWait()))
+                {
+                    try
+                    {
+                        return tryParseInput(inputDialog)
+                    }
+                    catch (ex:Exception)
+                    {
+                        val alert = Alert(Alert.AlertType.ERROR)
+                        alert.title = "Invalid Input"
+                        alert.headerText = "Invalid input format."
+                        alert.contentText = ex.message
+                        alert.showAndWait()
+                    }
+                }
+                return null
+            }
+
+            fun tryParseInput(inputDialog:TextInputDialog):Mapping
             {
                 val subStrings = inputDialog.result.split("=")
                 if (subStrings.size != 2)
@@ -178,45 +199,25 @@ class RevisionFunctionConfigPanel():VBox()
                 return Mapping(variableName,weight)
             }
 
-            override fun makeInputDialog(model:Mapping?):TextInputDialog
+            override fun isConsistent(items:List<Mapping>):List<String>
+            {
+                val violatedConstraints = mutableListOf<String>()
+                if (items.map {it.variableName}.toSet().size != items.map {it.variableName}.size)
+                {
+                    violatedConstraints += "each variable may only be mapped once"
+                }
+                return violatedConstraints
+            }
+
+            fun makeInputDialog(model:Mapping?):TextInputDialog
             {
                 return TextInputDialog(model?.toString())
                     .apply {headerText = "Enter the mapping below"}
             }
 
-            override fun isInputCancelled(result:Optional<String>):Boolean
+            fun isInputCancelled(result:Optional<String>):Boolean
             {
                 return !result.isPresent
-            }
-
-            override fun tryAddToListAt(existingEntries:MutableList<Mapping>,indexOfEntry:Int,newEntry:Mapping)
-            {
-                if (existingEntries.any {it.variableName == newEntry.variableName})
-                {
-                    throw RuntimeException("A mapping for the variable \"${newEntry.variableName}\" already exists.")
-                }
-                else
-                {
-                    existingEntries.add(indexOfEntry,newEntry)
-                }
-            }
-
-            override fun tryRemoveFromListAt(existingEntries:MutableList<Mapping>,indexOfEntry:Int)
-            {
-                existingEntries.removeAt(indexOfEntry)
-            }
-
-            override fun tryUpdateListAt(existingEntries:MutableList<Mapping>,indexOfEntry:Int,newEntry:Mapping)
-            {
-                val resultingList = existingEntries.filterIndexed {i,e -> i != indexOfEntry}
-                if (resultingList.any {it.variableName == newEntry.variableName})
-                {
-                    throw RuntimeException("A mapping for the variable \"${newEntry.variableName}\" already exists.")
-                }
-                else
-                {
-                    existingEntries[indexOfEntry] = newEntry
-                }
             }
         }
 
@@ -244,19 +245,40 @@ class RevisionFunctionConfigPanel():VBox()
 
     private inner class OrderedSetsOption:Option("Ordered Sets")
     {
-        val listview = object:EditableListView<Proposition,TextInputDialog,String>()
+        val listview = object:EditableListView<Proposition>()
         {
-            override fun isInputCancelled(result:Optional<String>):Boolean
+            override fun createItem(previousInput:Proposition?):Proposition?
+            {
+                val inputDialog = makeInputDialog(previousInput)
+                while (!isInputCancelled(inputDialog.showAndWait()))
+                {
+                    try
+                    {
+                        return tryParseInput(inputDialog)
+                    }
+                    catch (ex:Exception)
+                    {
+                        val alert = Alert(Alert.AlertType.ERROR)
+                        alert.title = "Invalid Input"
+                        alert.headerText = "Invalid input format."
+                        alert.contentText = ex.message
+                        alert.showAndWait()
+                    }
+                }
+                return null
+            }
+
+            fun isInputCancelled(result:Optional<String>):Boolean
             {
                 return !result.isPresent
             }
 
-            override fun tryParseInput(inputDialog:TextInputDialog):Proposition
+            fun tryParseInput(inputDialog:TextInputDialog):Proposition
             {
                 return Proposition.makeFrom(inputDialog.result)
             }
 
-            override fun makeInputDialog(model:Proposition?):TextInputDialog
+            fun makeInputDialog(model:Proposition?):TextInputDialog
             {
                 return TextInputDialog(model?.toParsableString())
                     .apply()

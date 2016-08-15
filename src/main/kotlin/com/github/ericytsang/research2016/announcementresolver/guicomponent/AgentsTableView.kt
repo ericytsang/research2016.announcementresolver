@@ -20,7 +20,7 @@ import javafx.util.Callback
 import java.util.Optional
 import kotlin.concurrent.thread
 
-class AgentsTableView():EditableTableView<AgentsTableView.RowData,Alert,ButtonType>()
+class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
 {
     init
     {
@@ -82,17 +82,38 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData,Alert,ButtonTy
         }
     }
 
-    override fun isInputCancelled(result:Optional<ButtonType>):Boolean
+    override fun createItem(previousInput:RowData?):RowData?
+    {
+        val inputDialog = makeInputDialog(previousInput)
+        while (!isInputCancelled(inputDialog.showAndWait()))
+        {
+            try
+            {
+                return tryParseInput(inputDialog)
+            }
+            catch (ex:Exception)
+            {
+                val alert = Alert(Alert.AlertType.ERROR)
+                alert.title = "Invalid Input"
+                alert.headerText = "Invalid input format."
+                alert.contentText = ex.message
+                alert.showAndWait()
+            }
+        }
+        return null
+    }
+
+    fun isInputCancelled(result:Optional<ButtonType>):Boolean
     {
         return result.get() != ButtonType.OK
     }
 
-    override fun makeInputDialog(model:RowData?):Alert
+    fun makeInputDialog(model:RowData?):Alert
     {
         return InputDialog(model)
     }
 
-    override fun tryParseInput(inputDialog:Alert):RowData
+    fun tryParseInput(inputDialog:Alert):RowData
     {
         inputDialog as InputDialog
         val initialK = inputDialog.initialKTextField.text.split(",").map {Proposition.makeFrom(it)}.toSet()
