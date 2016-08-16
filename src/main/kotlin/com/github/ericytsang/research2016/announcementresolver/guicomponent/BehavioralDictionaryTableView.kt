@@ -1,11 +1,14 @@
 package com.github.ericytsang.research2016.announcementresolver.guicomponent
 
+import com.github.ericytsang.lib.collections.ConstrainedList
+import com.github.ericytsang.lib.collections.SimpleConstraint
 import com.github.ericytsang.lib.javafxutils.ComplexComboBox
 import com.github.ericytsang.lib.javafxutils.EditableTableView
 import com.github.ericytsang.lib.javafxutils.ValidatableTextField
 import com.github.ericytsang.research2016.announcementresolver.robot.Behaviour
 import com.github.ericytsang.research2016.beliefrevisor.gui.Dimens
 import com.github.ericytsang.research2016.propositionallogic.Variable
+import com.sun.javafx.collections.ObservableListWrapper
 import javafx.beans.property.SimpleStringProperty
 import javafx.beans.value.ObservableValue
 import javafx.scene.Node
@@ -17,6 +20,7 @@ import javafx.scene.control.TableColumn
 import javafx.scene.control.TextField
 import javafx.scene.layout.VBox
 import javafx.util.Callback
+import java.util.ArrayList
 
 /**
  * Created by surpl on 8/13/2016.
@@ -25,6 +29,18 @@ class BehavioralDictionaryTableView:EditableTableView<BehavioralDictionaryTableV
 {
     init
     {
+        items = ArrayList<RowData>().let()
+        {
+            ConstrainedList(it).apply()
+            {
+                constraints += SimpleConstraint.make("variables must be unique")
+                {
+                    it.newValue.map {it.variable}.toSet().size == it.newValue.size
+                }
+            }
+        }
+        .let {ObservableListWrapper(it)}
+
         // add columns to the table view
         columns.add(TableColumn<RowData,String>().apply()
         {
@@ -69,19 +85,6 @@ class BehavioralDictionaryTableView:EditableTableView<BehavioralDictionaryTableV
             }
         }
         return null
-    }
-
-    /**
-     * enforces constraint that all [Variable] instances must be unique.
-     */
-    override fun isConsistent(items:List<RowData>):List<String>
-    {
-        val violatedConstraints = mutableListOf<String>()
-        if (items.map {it.variable}.toSet().size != items.size)
-        {
-            violatedConstraints += "variables must be unique"
-        }
-        return violatedConstraints
     }
 
     /**

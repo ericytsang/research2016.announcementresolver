@@ -1,5 +1,7 @@
 package com.github.ericytsang.research2016.announcementresolver.guicomponent
 
+import com.github.ericytsang.lib.collections.ConstrainedList
+import com.github.ericytsang.lib.collections.SimpleConstraint
 import com.sun.javafx.collections.ObservableListWrapper
 import javafx.beans.InvalidationListener
 import javafx.event.EventHandler
@@ -26,6 +28,7 @@ import com.github.ericytsang.research2016.propositionallogic.WeightedHammingDist
 import com.github.ericytsang.research2016.propositionallogic.makeFrom
 import com.github.ericytsang.research2016.propositionallogic.toParsableString
 import java.io.Serializable
+import java.util.ArrayList
 import java.util.Collections
 import java.util.Optional
 
@@ -156,16 +159,43 @@ class RevisionFunctionConfigPanel():VBox()
             init
             {
                 setVgrow(this,Priority.ALWAYS)
+
+                items = ArrayList<Mapping>().let()
+                {
+                    ConstrainedList(it).apply()
+                    {
+                        constraints += SimpleConstraint.make("each variable may only be mapped once")
+                        {
+                            it.newValue.map {it.variableName}.toSet().size == it.newValue.map {it.variableName}.size
+                        }
+                    }
+                }.let {ObservableListWrapper(it)}
             }
 
             override fun createOrUpdateItem(previousInput:Mapping?):Mapping?
             {
-                val inputDialog = makeInputDialog(previousInput)
-                while (!isInputCancelled(inputDialog.showAndWait()))
+                val inputDialog = TextInputDialog(previousInput?.toString())
+                    .apply {headerText = "Enter the mapping below"}
+                while (inputDialog.showAndWait().isPresent)
                 {
                     try
                     {
-                        return tryParseInput(inputDialog)
+                        val subStrings = inputDialog.result.split("=")
+                        if (subStrings.size != 2)
+                        {
+                            throw IllegalArgumentException("an equals sign must be used to represent the mapping e.g. \"a = 5\"")
+                        }
+                        if (!(subStrings[0].trim().matches(Regex("[a-zA-Z]+"))))
+                        {
+                            throw IllegalArgumentException("the variable name \"${subStrings[0].trim()}\" may only contain alphabetic characters.")
+                        }
+                        if (!(subStrings[1].trim().matches(Regex("[0-9]+"))))
+                        {
+                            throw IllegalArgumentException("the variable weight \"${subStrings[1].trim()}\" may only contain numeric characters.")
+                        }
+                        val variableName = subStrings[0].trim()
+                        val weight = subStrings[1].trim().toInt()
+                        return Mapping(variableName,weight)
                     }
                     catch (ex:Exception)
                     {
@@ -177,47 +207,6 @@ class RevisionFunctionConfigPanel():VBox()
                     }
                 }
                 return null
-            }
-
-            fun tryParseInput(inputDialog:TextInputDialog):Mapping
-            {
-                val subStrings = inputDialog.result.split("=")
-                if (subStrings.size != 2)
-                {
-                    throw IllegalArgumentException("an equals sign must be used to represent the mapping e.g. \"a = 5\"")
-                }
-                if (!(subStrings[0].trim().matches(Regex("[a-zA-Z]+"))))
-                {
-                    throw IllegalArgumentException("the variable name \"${subStrings[0].trim()}\" may only contain alphabetic characters.")
-                }
-                if (!(subStrings[1].trim().matches(Regex("[0-9]+"))))
-                {
-                    throw IllegalArgumentException("the variable weight \"${subStrings[1].trim()}\" may only contain numeric characters.")
-                }
-                val variableName = subStrings[0].trim()
-                val weight = subStrings[1].trim().toInt()
-                return Mapping(variableName,weight)
-            }
-
-            override fun isConsistent(items:List<Mapping>):List<String>
-            {
-                val violatedConstraints = mutableListOf<String>()
-                if (items.map {it.variableName}.toSet().size != items.map {it.variableName}.size)
-                {
-                    violatedConstraints += "each variable may only be mapped once"
-                }
-                return violatedConstraints
-            }
-
-            fun makeInputDialog(model:Mapping?):TextInputDialog
-            {
-                return TextInputDialog(model?.toString())
-                    .apply {headerText = "Enter the mapping below"}
-            }
-
-            fun isInputCancelled(result:Optional<String>):Boolean
-            {
-                return !result.isPresent
             }
         }
 

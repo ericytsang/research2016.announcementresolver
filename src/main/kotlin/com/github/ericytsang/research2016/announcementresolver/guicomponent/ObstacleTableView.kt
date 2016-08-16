@@ -1,10 +1,13 @@
 package com.github.ericytsang.research2016.announcementresolver.guicomponent
 
+import com.github.ericytsang.lib.collections.ConstrainedList
+import com.github.ericytsang.lib.collections.SimpleConstraint
 import com.github.ericytsang.lib.javafxutils.EditableTableView
 import com.github.ericytsang.lib.javafxutils.ValidatableTextField
 import com.github.ericytsang.research2016.announcementresolver.robot.Point
 import com.github.ericytsang.research2016.announcementresolver.robot.Wall
 import com.github.ericytsang.research2016.beliefrevisor.gui.Dimens
+import com.sun.javafx.collections.ObservableListWrapper
 import javafx.beans.property.SimpleStringProperty
 import javafx.scene.control.Alert
 import javafx.scene.control.ButtonType
@@ -12,6 +15,7 @@ import javafx.scene.control.Label
 import javafx.scene.control.TableColumn
 import javafx.scene.layout.VBox
 import javafx.util.Callback
+import java.util.ArrayList
 
 /**
  * Created by surpl on 8/15/2016.
@@ -20,6 +24,17 @@ class ObstacleTableView:EditableTableView<Wall>()
 {
     init
     {
+        items = ArrayList<Wall>().let()
+        {
+            ConstrainedList(it).apply()
+            {
+                constraints += SimpleConstraint.make("all walls must have distinct locations")
+                {
+                    it.newValue.toSet().size == it.newValue.size
+                }
+            }
+        }.let {ObservableListWrapper(it)}
+
         columns += TableColumn<Wall,String>().apply()
         {
             text = "Obstacles"
@@ -54,16 +69,6 @@ class ObstacleTableView:EditableTableView<Wall>()
             }
         }
         return null
-    }
-
-    override fun isConsistent(items:List<Wall>):List<String>
-    {
-        val violatedConstraints = mutableListOf<String>()
-        if (items.toSet().size != items.size)
-        {
-            violatedConstraints += "all walls must have distinct locations"
-        }
-        return violatedConstraints
     }
 
     val walls:Set<Wall> get()
