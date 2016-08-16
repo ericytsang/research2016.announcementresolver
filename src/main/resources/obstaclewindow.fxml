@@ -1,9 +1,9 @@
 <?import javafx.scene.layout.VBox?>
-<?import com.github.ericytsang.research2016.announcementresolver.guicomponent.BehavioralDictionaryTableView?>
 <?import javafx.geometry.Insets?>
+<?import com.github.ericytsang.research2016.announcementresolver.guicomponent.ObstacleTableView?>
 <VBox
     xmlns:fx="http://javafx.com/fxml"
-    fx:controller="com.github.ericytsang.research2016.announcementresolver.window.BehaviouralDictionaryWindowController"
+    fx:controller="com.github.ericytsang.research2016.announcementresolver.window.ObstacleWindowController"
     prefWidth="400.0"
     prefHeight="400.0">
     <padding>
@@ -18,6 +18,7 @@
             bottom="8.0"
             right="8.0"/>
     </padding>
-    <BehavioralDictionaryTableView
-        fx:id="behaviouralDictionaryTableView"/>
+    <ObstacleTableView
+        fx:id="obstacleTableView"/>
 </VBox>
+

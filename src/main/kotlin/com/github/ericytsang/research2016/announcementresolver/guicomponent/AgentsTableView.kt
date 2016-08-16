@@ -7,7 +7,6 @@ import com.github.ericytsang.research2016.propositionallogic.Proposition
 import com.github.ericytsang.research2016.propositionallogic.Variable
 import com.github.ericytsang.research2016.propositionallogic.makeFrom
 import com.github.ericytsang.research2016.propositionallogic.toParsableString
-import javafx.application.Platform
 import javafx.beans.property.SimpleStringProperty
 import javafx.beans.value.ObservableValue
 import javafx.scene.control.Alert
@@ -17,79 +16,71 @@ import javafx.scene.control.TableColumn
 import javafx.scene.control.TextField
 import javafx.scene.layout.VBox
 import javafx.util.Callback
-import java.util.Optional
-import kotlin.concurrent.thread
 
 class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
 {
     init
     {
         // add columns to the table view
-        columns.add(TableColumn<RowData,String>().apply()
+        columns += TableColumn<RowData,String>().apply()
         {
             text = "Initial belief state"
-            cellValueFactory = Callback<TableColumn.CellDataFeatures<RowData,String>,ObservableValue<String>>()
+            cellValueFactory = Callback()
             {
                 it.value.problemInstance.initialBeliefState
                     .let {beliefStateToString(it.toList(),allVariables)}
                     .joinToString("\n")
                     .let {SimpleStringProperty(it)}
             }
-        })
-        columns.add(TableColumn<RowData,String>().apply()
+        }
+        columns += TableColumn<RowData,String>().apply()
         {
             text = "Target belief state"
-            cellValueFactory = Callback<TableColumn.CellDataFeatures<RowData,String>,ObservableValue<String>>()
+            cellValueFactory = Callback()
             {
                 it.value.problemInstance.targetBeliefState
                     .let {beliefStateToString(listOf(it),allVariables)}
                     .joinToString("\n")
                     .let {SimpleStringProperty(it)}
             }
-        })
-        columns.add(TableColumn<RowData,String>().apply()
+        }
+        columns += TableColumn<RowData,String>().apply()
         {
             text = "Belief revision operator"
-            cellValueFactory = Callback<TableColumn.CellDataFeatures<RowData,String>,ObservableValue<String>>()
+            cellValueFactory = Callback()
             {
                 it.value.revisionFunctionConfigPanel.revisionOperatorComboBox.value.name
                     .let {SimpleStringProperty(it)}
             }
-        })
-        columns.add(TableColumn<RowData,String>().apply()
+        }
+        columns += TableColumn<RowData,String>().apply()
         {
             text = "Revised belief state"
-            cellValueFactory = Callback<TableColumn.CellDataFeatures<RowData,String>,ObservableValue<String>>()
+            cellValueFactory = Callback()
             {
                 it.value.actualK
                     .let {beliefStateToString(it.toList(),allVariables)}
                     .joinToString("\n")
                     .let {SimpleStringProperty(it)}
             }
-        })
-
-        // set columns to appropriate width after layout dimensions have settled
-        thread()
-        {
-            Thread.sleep(1000)
-            Platform.runLater()
-            {
-                columns.forEach()
-                {
-                    it.prefWidth = (width/columns.size)
-                }
-            }
         }
+
+        // set the column resize policy
+        columnResizePolicy = CONSTRAINED_RESIZE_POLICY
     }
 
-    override fun createItem(previousInput:RowData?):RowData?
+    override fun createOrUpdateItem(previousInput:RowData?):RowData?
     {
-        val inputDialog = makeInputDialog(previousInput)
-        while (!isInputCancelled(inputDialog.showAndWait()))
+        val inputDialog = InputDialog(previousInput)
+        while (inputDialog.showAndWait().get() == ButtonType.OK)
         {
             try
             {
-                return tryParseInput(inputDialog)
+                // todo: better error messages
+                val initialK = inputDialog.initialKTextField.text.split(",").map {Proposition.makeFrom(it)}.toSet()
+                val targetK = Proposition.makeFrom(inputDialog.targetKTextField.text)
+                val beliefRevisionStrategy = inputDialog.operatorInputPane.beliefRevisionStrategy ?: throw IllegalArgumentException("A belief revision operation must be specified")
+                return RowData(AnnouncementResolutionStrategy.ProblemInstance(initialK,targetK,beliefRevisionStrategy),inputDialog.operatorInputPane,emptySet())
             }
             catch (ex:Exception)
             {
@@ -103,25 +94,11 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
         return null
     }
 
-    fun isInputCancelled(result:Optional<ButtonType>):Boolean
-    {
-        return result.get() != ButtonType.OK
-    }
-
-    fun makeInputDialog(model:RowData?):Alert
-    {
-        return InputDialog(model)
-    }
-
-    fun tryParseInput(inputDialog:Alert):RowData
-    {
-        inputDialog as InputDialog
-        val initialK = inputDialog.initialKTextField.text.split(",").map {Proposition.makeFrom(it)}.toSet()
-        val targetK = Proposition.makeFrom(inputDialog.targetKTextField.text)
-        val beliefRevisionStrategy = inputDialog.operatorInputPane.beliefRevisionStrategy ?: throw IllegalArgumentException("A belief revision operation must be specified")
-        return RowData(AnnouncementResolutionStrategy.ProblemInstance(initialK,targetK,beliefRevisionStrategy),inputDialog.operatorInputPane,emptySet())
-    }
-
+    /**
+     * takes a belief state as input and returns how it should be displayed on
+     * the table view. each element in the returned list is displayed on
+     * separate lines.
+     */
     var beliefStateToString:(List<Proposition>,Set<Variable>)->List<String> = fun(beliefState:List<Proposition>,vocabulary:Set<Variable>):List<String>
     {
         return beliefState.map {it.toString()}
@@ -133,11 +110,9 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
             refresh()
         }
 
-    data class RowData(
-        val problemInstance:AnnouncementResolutionStrategy.ProblemInstance,
-        val revisionFunctionConfigPanel:RevisionFunctionConfigPanel,
-        val actualK:Set<Proposition>)
-
+    /**
+     * returns a set of all unique [Variable] instances in [items].
+     */
     private val allVariables:Set<Variable> get()
     {
         val propositions = mutableSetOf<Proposition>()
@@ -146,6 +121,18 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
         return propositions.flatMap {it.variables}.toSet()
     }
 
+    /**
+     * each [RowData] instance can be represented as a row in [AgentsTableView].
+     */
+    data class RowData(
+        val problemInstance:AnnouncementResolutionStrategy.ProblemInstance,
+        val revisionFunctionConfigPanel:RevisionFunctionConfigPanel,
+        val actualK:Set<Proposition>)
+
+    /**
+     * dialog shown when inserting new entries into the [AgentsTableView] or
+     * editing existing entries.
+     */
     inner private class InputDialog(model:RowData?):Alert(AlertType.NONE)
     {
         val initialKTextField = TextField()

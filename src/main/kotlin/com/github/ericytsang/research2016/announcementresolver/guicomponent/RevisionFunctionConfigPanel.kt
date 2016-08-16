@@ -158,7 +158,7 @@ class RevisionFunctionConfigPanel():VBox()
                 setVgrow(this,Priority.ALWAYS)
             }
 
-            override fun createItem(previousInput:Mapping?):Mapping?
+            override fun createOrUpdateItem(previousInput:Mapping?):Mapping?
             {
                 val inputDialog = makeInputDialog(previousInput)
                 while (!isInputCancelled(inputDialog.showAndWait()))
@@ -247,7 +247,7 @@ class RevisionFunctionConfigPanel():VBox()
     {
         val listview = object:EditableListView<Proposition>()
         {
-            override fun createItem(previousInput:Proposition?):Proposition?
+            override fun createOrUpdateItem(previousInput:Proposition?):Proposition?
             {
                 val inputDialog = makeInputDialog(previousInput)
                 while (!isInputCancelled(inputDialog.showAndWait()))

@@ -1,8 +1,10 @@
-package com.github.ericytsang.research2016.announcementresolver
+package com.github.ericytsang.research2016.announcementresolver.window
 
 import com.github.ericytsang.research2016.announcementresolver.guicomponent.AgentsTableView
 import com.github.ericytsang.research2016.announcementresolver.guicomponent.DisplayModeComboBox
 import com.github.ericytsang.research2016.announcementresolver.guicomponent.RevisionFunctionConfigPanel
+import com.github.ericytsang.research2016.announcementresolver.toJSONObject
+import com.github.ericytsang.research2016.announcementresolver.toProblemInstance
 import com.github.ericytsang.research2016.propositionallogic.BruteForceAnnouncementResolutionStrategy
 import com.github.ericytsang.research2016.propositionallogic.ComparatorBeliefRevisionStrategy
 import com.github.ericytsang.research2016.propositionallogic.OrderedAnnouncementResolutionStrategy
@@ -41,6 +43,30 @@ class AgentsWindowController:Initializable
     /**
      * field is initialized by the JavaFx framework.
      *
+     * [CheckMenuItem] that when clicked, calls [toggleDictionaryWindow].
+     */
+    @FXML private lateinit var toggleDictionaryWindowCheckMenuItem:CheckMenuItem
+
+    /**
+     * field is initialized by the JavaFx framework.
+     *
+     * [CheckMenuItem] that when clicked, calls [toggleObstacleWindow].
+     */
+    @FXML private lateinit var toggleObstacleWindowCheckMenuItem:CheckMenuItem
+
+    /**
+     * field is initialized by the JavaFx framework.
+     *
+     * enables user to input and view initial belief states, target belief
+     * states and belief revision operators of agents. this table is also used
+     * to display the revised belief state of agents if an announcement is
+     * found.
+     */
+    @FXML private lateinit var agentsTableView:AgentsTableView
+
+    /**
+     * field is initialized by the JavaFx framework.
+     *
      * lets the user specify the display format used for showing [Proposition]
      * objects.
      */
@@ -53,28 +79,6 @@ class AgentsWindowController:Initializable
      * otherwise.
      */
     @FXML private lateinit var announcementLabel:Label
-
-    /**
-     * field is initialized by the JavaFx framework.
-     *
-     * click actions on this menu item calls [toggleDictionaryWindow].
-     */
-    @FXML private lateinit var toggleDictionaryWindowCheckMenuItem:CheckMenuItem
-
-    /**
-     * field is initialized by the JavaFx framework.
-     *
-     * thread used to calculate announcement. initialized to a thread to get rid
-     * of the need to check for null.
-     */
-    private var announcementFinderThread = thread {}
-
-    private val dictionaryWindow = Stage().apply()
-    {
-        val root = FXMLLoader(this@AgentsWindowController.javaClass.classLoader.getResource("behavioraldictionarywindow.fxml")).load<Parent>()
-        scene = Scene(root)
-        title = "Behavioural Dictionary"
-    }
 
     /**
      * field is initialized by the JavaFx framework.
@@ -92,14 +96,27 @@ class AgentsWindowController:Initializable
     @FXML private lateinit var findAnnouncementButton:Button
 
     /**
-     * field is initialized by the JavaFx framework.
-     *
-     * enables user to input and view initial belief states, target belief
-     * states and belief revision operators of agents. this table is also used
-     * to display the revised belief state of agents if an announcement is
-     * found.
+     * thread used to calculate announcement. initialized to a thread to get rid
+     * of the need to check for null.
      */
-    @FXML private lateinit var agentsTableView:AgentsTableView
+    private var announcementFinderThread = thread {}
+
+    /**
+     * window used by user to map variables to robot behaviours.
+     */
+    private val dictionaryWindow = Stage().apply()
+    {
+        val root = FXMLLoader(this@AgentsWindowController.javaClass.classLoader.getResource("behavioraldictionarywindow.fxml")).load<Parent>()
+        scene = Scene(root)
+        title = "Behavioural Dictionary"
+    }
+
+    private val obstacleWindow = Stage().apply()
+    {
+        val root = FXMLLoader(this@AgentsWindowController.javaClass.classLoader.getResource("obstaclewindow.fxml")).load<Parent>()
+        scene = Scene(root)
+        title = "Obstacles"
+    }
 
     override fun initialize(location:URL?,resources:ResourceBundle?)
     {
@@ -135,6 +152,20 @@ class AgentsWindowController:Initializable
         dictionaryWindow.scene.window.onHidden = EventHandler()
         {
             toggleDictionaryWindowCheckMenuItem.isSelected = false
+        }
+
+        /*
+         * make sure that [toggleObstacleWindowCheckMenuItem] is displaying a
+         * check mark beside itself when [obstacleWindow] is showing, and that
+         * no check mark is displayed otherwise.
+         */
+        obstacleWindow.scene.window.onShown = EventHandler()
+        {
+            toggleObstacleWindowCheckMenuItem.isSelected = true
+        }
+        obstacleWindow.scene.window.onHidden = EventHandler()
+        {
+            toggleObstacleWindowCheckMenuItem.isSelected = false
         }
     }
 
@@ -208,6 +239,9 @@ class AgentsWindowController:Initializable
         }
     }
 
+    /**
+     * invoked by framework when Commit button pressed.
+     */
     @FXML private fun commitAnnouncement()
     {
         if (agentsTableView.items.all {it.actualK.isNotEmpty()})
@@ -223,6 +257,10 @@ class AgentsWindowController:Initializable
         }
     }
 
+    /**
+     * invoked by framework when the Window > Behavioural Dictionary
+     * [CheckMenuItem] pressed.
+     */
     @FXML private fun toggleDictionaryWindow()
     {
         if (dictionaryWindow.isShowing)
@@ -235,6 +273,25 @@ class AgentsWindowController:Initializable
         }
     }
 
+    /**
+     * invoked by framework when the Window > Behavioural Dictionary
+     * [CheckMenuItem] pressed.
+     */
+    @FXML private fun toggleObstacleWindow()
+    {
+        if (obstacleWindow.isShowing)
+        {
+            obstacleWindow.hide()
+        }
+        else
+        {
+            obstacleWindow.show()
+        }
+    }
+
+    /**
+     * invoked by framework when the File > Save [MenuItem] is pressed.
+     */
     @FXML private fun saveToFile()
     {
         val file = FileChooser()
@@ -259,6 +316,9 @@ class AgentsWindowController:Initializable
         }
     }
 
+    /**
+     * invoked by framework when the File > Load [MenuItem] is pressed.
+     */
     @FXML private fun loadFromFile()
     {
         val file = FileChooser()

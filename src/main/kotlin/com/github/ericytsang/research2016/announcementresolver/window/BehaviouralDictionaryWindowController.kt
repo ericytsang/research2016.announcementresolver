@@ -1,4 +1,4 @@
-package com.github.ericytsang.research2016.announcementresolver
+package com.github.ericytsang.research2016.announcementresolver.window
 
 import com.github.ericytsang.research2016.announcementresolver.guicomponent.BehavioralDictionaryTableView
 import javafx.fxml.FXML

@@ -17,7 +17,6 @@ import javafx.scene.control.TableColumn
 import javafx.scene.control.TextField
 import javafx.scene.layout.VBox
 import javafx.util.Callback
-import java.util.Optional
 
 /**
  * Created by surpl on 8/13/2016.
@@ -38,22 +37,27 @@ class BehavioralDictionaryTableView:EditableTableView<BehavioralDictionaryTableV
         columns.add(TableColumn<RowData,String>().apply()
         {
             text = "Behaviour"
-            prefWidth= 250.0
             cellValueFactory = Callback<TableColumn.CellDataFeatures<RowData,String>,ObservableValue<String>>()
             {
                 SimpleStringProperty(it.value.behavior.toString())
             }
         })
+
+        // set the column resize policy
+        columnResizePolicy = CONSTRAINED_RESIZE_POLICY
     }
 
-    override fun createItem(previousInput:RowData?):RowData?
+    override fun createOrUpdateItem(previousInput:RowData?):RowData?
     {
-        val inputDialog = makeInputDialog(previousInput)
-        while (!isInputCancelled(inputDialog.showAndWait()))
+        val inputDialog = InputDialog(previousInput)
+        while (inputDialog.showAndWait().get() == ButtonType.OK)
         {
             try
             {
-                return tryParseInput(inputDialog)
+                // todo: better error messages
+                return RowData(
+                    Variable.fromString(inputDialog.variableTextField.text),
+                    inputDialog.behaviorComboBox.comboBox.value.build())
             }
             catch (ex:Exception)
             {
@@ -67,26 +71,35 @@ class BehavioralDictionaryTableView:EditableTableView<BehavioralDictionaryTableV
         return null
     }
 
-    private fun isInputCancelled(result:Optional<ButtonType>):Boolean
+    /**
+     * enforces constraint that all [Variable] instances must be unique.
+     */
+    override fun isConsistent(items:List<RowData>):List<String>
     {
-        return result.get() != ButtonType.OK
+        val violatedConstraints = mutableListOf<String>()
+        if (items.map {it.variable}.toSet().size != items.size)
+        {
+            violatedConstraints += "variables must be unique"
+        }
+        return violatedConstraints
     }
 
-    private fun makeInputDialog(model:RowData?):Alert
+    /**
+     * user-defined map that maps [Variable] objects to [Behaviour] objects.
+     */
+    val behaviours:Map<Variable,Behaviour> get()
     {
-        return InputDialog(model)
+        return items.associate {it.variable to it.behavior}
     }
 
-    private fun tryParseInput(inputDialog:Alert):RowData
-    {
-        inputDialog as InputDialog
-        return RowData(
-            Variable.fromString(inputDialog.variableTextField.text),
-            inputDialog.behaviorComboBox.comboBox.value.build())
-    }
-
+    /**
+     * holds the data for a single row in [BehavioralDictionaryTableView].
+     */
     data class RowData(val variable:Variable,val behavior:Behaviour)
 
+    /**
+     * used to gather user input to create or edit [RowData] instances.
+     */
     private class InputDialog(model:RowData?):Alert(AlertType.NONE)
     {
         val variableTextField = TextField().apply()

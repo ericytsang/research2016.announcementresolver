@@ -12,7 +12,7 @@
 <VBox
     xmlns:fx="http://javafx.com/fxml"
     fx:id="rootLayout"
-    fx:controller="com.github.ericytsang.research2016.announcementresolver.AgentsWindowController"
+    fx:controller="com.github.ericytsang.research2016.announcementresolver.window.AgentsWindowController"
     prefWidth="700.0"
     prefHeight="400.0">
     <children>
@@ -32,6 +32,10 @@
                     fx:id="toggleDictionaryWindowCheckMenuItem"
                     text="Behavioural Dictionary"
                     onAction="#toggleDictionaryWindow"/>
+                <CheckMenuItem
+                    fx:id="toggleObstacleWindowCheckMenuItem"
+                    text="Obstacles"
+                    onAction="#toggleObstacleWindow"/>
             </Menu>
         </MenuBar>
         <VBox
