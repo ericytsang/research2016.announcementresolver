@@ -36,6 +36,10 @@
                     fx:id="toggleObstacleWindowCheckMenuItem"
                     text="Obstacles"
                     onAction="#toggleObstacleWindow"/>
+                <CheckMenuItem
+                    fx:id="toggleSimulationWindowCheckMenuItem"
+                    text="Simulation"
+                    onAction="#toggleSimulationWindow"/>
             </Menu>
         </MenuBar>
         <VBox

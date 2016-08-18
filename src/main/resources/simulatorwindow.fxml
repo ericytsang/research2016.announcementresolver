@@ -1,0 +1,11 @@
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.canvas.Canvas?>
+<VBox
+    xmlns:fx="http://javafx.com/fxml"
+    fx:id="parentLayout"
+    fx:controller="com.github.ericytsang.research2016.announcementresolver.window.SimulatorWindowController"
+    prefWidth="400.0"
+    prefHeight="400.0">
+    <Canvas
+        fx:id="canvas"/>
+</VBox>

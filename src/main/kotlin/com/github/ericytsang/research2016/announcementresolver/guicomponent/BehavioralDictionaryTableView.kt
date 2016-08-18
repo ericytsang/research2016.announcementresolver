@@ -5,7 +5,7 @@ import com.github.ericytsang.lib.collections.SimpleConstraint
 import com.github.ericytsang.lib.javafxutils.ComplexComboBox
 import com.github.ericytsang.lib.javafxutils.EditableTableView
 import com.github.ericytsang.lib.javafxutils.ValidatableTextField
-import com.github.ericytsang.research2016.announcementresolver.robot.Behaviour
+import com.github.ericytsang.research2016.announcementresolver.simulation.Behaviour
 import com.github.ericytsang.research2016.beliefrevisor.gui.Dimens
 import com.github.ericytsang.research2016.propositionallogic.Variable
 import com.sun.javafx.collections.ObservableListWrapper
@@ -85,14 +85,6 @@ class BehavioralDictionaryTableView:EditableTableView<BehavioralDictionaryTableV
             }
         }
         return null
-    }
-
-    /**
-     * user-defined map that maps [Variable] objects to [Behaviour] objects.
-     */
-    val behaviours:Map<Variable,Behaviour> get()
-    {
-        return items.associate {it.variable to it.behavior}
     }
 
     /**

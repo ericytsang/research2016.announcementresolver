@@ -4,8 +4,8 @@ import com.github.ericytsang.lib.collections.ConstrainedList
 import com.github.ericytsang.lib.collections.SimpleConstraint
 import com.github.ericytsang.lib.javafxutils.EditableTableView
 import com.github.ericytsang.lib.javafxutils.ValidatableTextField
-import com.github.ericytsang.research2016.announcementresolver.robot.Point
-import com.github.ericytsang.research2016.announcementresolver.robot.Wall
+import com.github.ericytsang.lib.simulation.Simulation
+import com.github.ericytsang.research2016.announcementresolver.simulation.Wall
 import com.github.ericytsang.research2016.beliefrevisor.gui.Dimens
 import com.sun.javafx.collections.ObservableListWrapper
 import javafx.beans.property.SimpleStringProperty
@@ -20,11 +20,11 @@ import java.util.ArrayList
 /**
  * Created by surpl on 8/15/2016.
  */
-class ObstacleTableView:EditableTableView<Wall>()
+class ObstacleTableView:EditableTableView<ObstacleTableView.RowData>()
 {
     init
     {
-        items = ArrayList<Wall>().let()
+        items = ArrayList<RowData>().let()
         {
             ConstrainedList(it).apply()
             {
@@ -35,7 +35,7 @@ class ObstacleTableView:EditableTableView<Wall>()
             }
         }.let {ObservableListWrapper(it)}
 
-        columns += TableColumn<Wall,String>().apply()
+        columns += TableColumn<RowData,String>().apply()
         {
             text = "Obstacles"
             cellValueFactory = Callback()
@@ -47,7 +47,7 @@ class ObstacleTableView:EditableTableView<Wall>()
         columnResizePolicy = CONSTRAINED_RESIZE_POLICY
     }
 
-    override fun createOrUpdateItem(previousInput:Wall?):Wall?
+    override fun createOrUpdateItem(previousInput:RowData?):RowData?
     {
         val inputDialog = InputDialog(previousInput)
         while (inputDialog.showAndWait().get() == ButtonType.OK)
@@ -55,9 +55,11 @@ class ObstacleTableView:EditableTableView<Wall>()
             try
             {
                 // todo: better error messages
-                return Wall(
-                    Point(inputDialog.position1XTextField.text.toInt(),inputDialog.position1YTextField.text.toInt()),
-                    Point(inputDialog.position2XTextField.text.toInt(),inputDialog.position2YTextField.text.toInt()))
+
+                // todo: check that the cells are adjacent to one another...maybe can check in the init method of rowdata
+                return RowData(
+                    Simulation.Cell.getElseMake(inputDialog.position1XTextField.text.toInt(),inputDialog.position1YTextField.text.toInt()),
+                    Simulation.Cell.getElseMake(inputDialog.position2XTextField.text.toInt(),inputDialog.position2YTextField.text.toInt()))
             }
             catch (ex:Exception)
             {
@@ -71,24 +73,21 @@ class ObstacleTableView:EditableTableView<Wall>()
         return null
     }
 
-    val walls:Set<Wall> get()
-    {
-        return items.toSet()
-    }
+    data class RowData(val cell1:Simulation.Cell,val cell2:Simulation.Cell)
 
-    private class InputDialog(val previousInput:Wall?):Alert(AlertType.NONE)
+    private class InputDialog(val previousInput:RowData?):Alert(AlertType.NONE)
     {
         val position1XTextField = ValidatableTextField.makeNumericTextField()
-            .apply {text = previousInput?.position1?.x?.toString() ?: ""}
+            .apply {text = previousInput?.cell1?.x?.toString() ?: ""}
 
         val position1YTextField = ValidatableTextField.makeNumericTextField()
-            .apply {text = previousInput?.position1?.y?.toString() ?: ""}
+            .apply {text = previousInput?.cell1?.y?.toString() ?: ""}
 
         val position2XTextField = ValidatableTextField.makeNumericTextField()
-            .apply {text = previousInput?.position2?.x?.toString() ?: ""}
+            .apply {text = previousInput?.cell2?.x?.toString() ?: ""}
 
         val position2YTextField = ValidatableTextField.makeNumericTextField()
-            .apply {text = previousInput?.position2?.y?.toString() ?: ""}
+            .apply {text = previousInput?.cell2?.y?.toString() ?: ""}
 
         init
         {

@@ -1,4 +1,4 @@
-package com.github.ericytsang.research2016.announcementresolver.robot
+package com.github.ericytsang.research2016.announcementresolver.simulation
 
 sealed class Behaviour
 {

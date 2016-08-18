@@ -8,7 +8,7 @@ import com.github.ericytsang.research2016.propositionallogic.Variable
 import com.github.ericytsang.research2016.propositionallogic.makeFrom
 import com.github.ericytsang.research2016.propositionallogic.toParsableString
 import javafx.beans.property.SimpleStringProperty
-import javafx.beans.value.ObservableValue
+import javafx.event.EventHandler
 import javafx.scene.control.Alert
 import javafx.scene.control.ButtonType
 import javafx.scene.control.Label

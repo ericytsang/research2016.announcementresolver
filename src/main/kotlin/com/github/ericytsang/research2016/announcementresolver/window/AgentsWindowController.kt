@@ -3,6 +3,7 @@ package com.github.ericytsang.research2016.announcementresolver.window
 import com.github.ericytsang.research2016.announcementresolver.guicomponent.AgentsTableView
 import com.github.ericytsang.research2016.announcementresolver.guicomponent.DisplayModeComboBox
 import com.github.ericytsang.research2016.announcementresolver.guicomponent.RevisionFunctionConfigPanel
+import com.github.ericytsang.research2016.announcementresolver.simulation.Wall
 import com.github.ericytsang.research2016.announcementresolver.toJSONObject
 import com.github.ericytsang.research2016.announcementresolver.toProblemInstance
 import com.github.ericytsang.research2016.propositionallogic.BruteForceAnnouncementResolutionStrategy
@@ -12,6 +13,8 @@ import com.github.ericytsang.research2016.propositionallogic.Proposition
 import com.github.ericytsang.research2016.propositionallogic.toDnf
 import com.sun.javafx.collections.ObservableListWrapper
 import javafx.application.Platform
+import javafx.beans.InvalidationListener
+import javafx.collections.ListChangeListener
 import javafx.event.EventHandler
 import javafx.fxml.FXML
 import javafx.fxml.FXMLLoader
@@ -53,6 +56,13 @@ class AgentsWindowController:Initializable
      * [CheckMenuItem] that when clicked, calls [toggleObstacleWindow].
      */
     @FXML private lateinit var toggleObstacleWindowCheckMenuItem:CheckMenuItem
+
+    /**
+     * field is initialized by the JavaFx framework.
+     *
+     * [CheckMenuItem] that when clicked, calls [toggleSimulationWindow].
+     */
+    @FXML private lateinit var toggleSimulationWindowCheckMenuItem:CheckMenuItem
 
     /**
      * field is initialized by the JavaFx framework.
@@ -111,11 +121,24 @@ class AgentsWindowController:Initializable
         title = "Behavioural Dictionary"
     }
 
+    private lateinit var obstacleWindowController:ObstacleWindowController
+
     private val obstacleWindow = Stage().apply()
     {
-        val root = FXMLLoader(this@AgentsWindowController.javaClass.classLoader.getResource("obstaclewindow.fxml")).load<Parent>()
-        scene = Scene(root)
+        val loader = FXMLLoader(this@AgentsWindowController.javaClass.classLoader.getResource("obstaclewindow.fxml"))
+        scene = Scene(loader.load())
         title = "Obstacles"
+        obstacleWindowController = loader.getController()
+    }
+
+    private lateinit var simulationWindowController:SimulatorWindowController
+
+    private val simulationWindow = Stage().apply()
+    {
+        val loader = FXMLLoader(this@AgentsWindowController.javaClass.classLoader.getResource("simulatorwindow.fxml"))
+        scene = Scene(loader.load())
+        title = "Simulation"
+        simulationWindowController = loader.getController()
     }
 
     override fun initialize(location:URL?,resources:ResourceBundle?)
@@ -141,9 +164,9 @@ class AgentsWindowController:Initializable
         }
 
         /*
-         * make sure that [toggleDictionaryWindowCheckMenuItem] is displaying a
-         * check mark beside itself when [dictionaryWindow] is showing, and that
-         * no check mark is displayed otherwise.
+         * [toggleDictionaryWindowCheckMenuItem] displays a check mark beside
+         * itself when [dictionaryWindow] is showing; no check mark is displayed
+         * otherwise.
          */
         dictionaryWindow.scene.window.onShown = EventHandler()
         {
@@ -155,9 +178,9 @@ class AgentsWindowController:Initializable
         }
 
         /*
-         * make sure that [toggleObstacleWindowCheckMenuItem] is displaying a
-         * check mark beside itself when [obstacleWindow] is showing, and that
-         * no check mark is displayed otherwise.
+         * [toggleObstacleWindowCheckMenuItem] displays a check mark beside
+         * itself when [obstacleWindow] is showing; no check mark is displayed
+         * otherwise.
          */
         obstacleWindow.scene.window.onShown = EventHandler()
         {
@@ -167,6 +190,31 @@ class AgentsWindowController:Initializable
         {
             toggleObstacleWindowCheckMenuItem.isSelected = false
         }
+
+        /*
+         * [toggleSimulationWindowCheckMenuItem] displays a check mark beside
+         * itself when [simulationWindow] is showing; no check mark is displayed
+         * otherwise.
+         */
+        simulationWindow.scene.window.onShown = EventHandler()
+        {
+            toggleSimulationWindowCheckMenuItem.isSelected = true
+        }
+        simulationWindow.scene.window.onHidden = EventHandler()
+        {
+            toggleSimulationWindowCheckMenuItem.isSelected = false
+        }
+
+        /*
+         * when walls are added to the [obstacleWindow], they are also added to
+         * the [simulationWindow]'s canvas
+         */
+        obstacleWindowController.obstacleTableView.items.addListener(InvalidationListener()
+        {
+            simulationWindowController.simulation.entityToCellsMap.keys.removeAll {it is Wall}
+            simulationWindowController.simulation.entityToCellsMap
+                .putAll(obstacleWindowController.obstacleTableView.items.associate {Wall(it.cell1,it.cell2) to setOf(it.cell1,it.cell2)})
+        })
     }
 
     /**
@@ -274,8 +322,7 @@ class AgentsWindowController:Initializable
     }
 
     /**
-     * invoked by framework when the Window > Behavioural Dictionary
-     * [CheckMenuItem] pressed.
+     * invoked by framework when the Window > Obstacles [CheckMenuItem] pressed.
      */
     @FXML private fun toggleObstacleWindow()
     {
@@ -289,6 +336,21 @@ class AgentsWindowController:Initializable
         }
     }
 
+    /**
+     * invoked by framework when the Window > Simulation [CheckMenuItem]
+     * pressed.
+     */
+    @FXML private fun toggleSimulationWindow()
+    {
+        if (simulationWindow.isShowing)
+        {
+            simulationWindow.hide()
+        }
+        else
+        {
+            simulationWindow.show()
+        }
+    }
     /**
      * invoked by framework when the File > Save [MenuItem] is pressed.
      */
