@@ -4,10 +4,7 @@ import com.github.ericytsang.lib.oopatterns.StateMachine
 import com.github.ericytsang.lib.oopatterns.get
 import com.github.ericytsang.lib.oopatterns.set
 import com.github.ericytsang.lib.simulation.Simulation
-import com.github.ericytsang.research2016.propositionallogic.And
-import com.github.ericytsang.research2016.propositionallogic.BeliefRevisionStrategy
-import com.github.ericytsang.research2016.propositionallogic.Proposition
-import com.github.ericytsang.research2016.propositionallogic.Variable
+import com.github.ericytsang.research2016.propositionallogic.*
 import javafx.scene.paint.Color
 import kotlin.concurrent.withLock
 
@@ -18,7 +15,7 @@ class VirtualAgentController(agentId:Double):AgentController(agentId)
     override fun setBeliefState(beliefState:Set<Proposition>) = connectivityStateMachine.get().setBeliefState(beliefState)
     override fun setBeliefRevisionStrategy(beliefRevisionStrategy:BeliefRevisionStrategy) = connectivityStateMachine.get().setBeliefRevisionStrategy(beliefRevisionStrategy)
     override fun reviseBeliefState(sentence:Proposition) = connectivityStateMachine.get().reviseBeliefState(sentence)
-    override fun setBehaviourDictionary(dictionary:Map<Variable,Behaviour>) = connectivityStateMachine.get().setBehaviourDictionary(dictionary)
+    override fun setBehaviourDictionary(behaviourDictionary:List<Pair<Proposition,Behaviour>>) = connectivityStateMachine.get().setBehaviourDictionary(behaviourDictionary)
     override fun update(simulation:Simulation<CanvasRenderer.Renderee>) = connectivityStateMachine.get().update(simulation)
 
     // todo: use getters and setters instead...and make them invoke stuff on the current state in the state machine
@@ -35,7 +32,7 @@ class VirtualAgentController(agentId:Double):AgentController(agentId)
         fun setBeliefState(beliefState:Set<Proposition>)
         fun setBeliefRevisionStrategy(beliefRevisionStrategy:BeliefRevisionStrategy)
         fun reviseBeliefState(sentence:Proposition)
-        fun setBehaviourDictionary(behaviourDictionary:Map<Variable,Behaviour>)
+        fun setBehaviourDictionary(behaviourDictionary:List<Pair<Proposition,Behaviour>>)
         fun update(simulation:Simulation<CanvasRenderer.Renderee>)
     }
 
@@ -48,15 +45,15 @@ class VirtualAgentController(agentId:Double):AgentController(agentId)
         override fun setBeliefState(beliefState:Set<Proposition>) = throw IllegalStateException("disconnected")
         override fun setBeliefRevisionStrategy(beliefRevisionStrategy:BeliefRevisionStrategy) = throw IllegalStateException("disconnected")
         override fun reviseBeliefState(sentence:Proposition) = throw IllegalStateException("disconnected")
-        override fun setBehaviourDictionary(behaviourDictionary:Map<Variable,Behaviour>) = throw IllegalStateException("disconnected")
+        override fun setBehaviourDictionary(behaviourDictionary:List<Pair<Proposition,Behaviour>>) = throw IllegalStateException("disconnected")
         override fun update(simulation:Simulation<CanvasRenderer.Renderee>) = Unit
     }
 
     private inner class Connected:State
     {
-        private lateinit var beliefState:Set<Proposition>
-        private lateinit var beliefRevisionStrategy:BeliefRevisionStrategy
-        private lateinit var behaviourDictionary:Map<Variable,Behaviour>
+        private var beliefState:Set<Proposition> = emptySet()
+        private var beliefRevisionStrategy:BeliefRevisionStrategy = ComparatorBeliefRevisionStrategy({HammingDistanceComparator(it)})
+        private var behaviourDictionary:List<Pair<Proposition,Behaviour>> = emptyList()
 
         override fun onEnter() = Unit
         override fun onExit() = Unit
@@ -78,7 +75,7 @@ class VirtualAgentController(agentId:Double):AgentController(agentId)
             beliefState = beliefRevisionStrategy.revise(beliefState,sentence)
         }
 
-        override fun setBehaviourDictionary(behaviourDictionary:Map<Variable,Behaviour>)
+        override fun setBehaviourDictionary(behaviourDictionary:List<Pair<Proposition,Behaviour>>)
         {
             this.behaviourDictionary = behaviourDictionary
         }
@@ -87,9 +84,9 @@ class VirtualAgentController(agentId:Double):AgentController(agentId)
 
         override fun update(simulation:Simulation<CanvasRenderer.Renderee>)
         {
-            val models = And.make(beliefState)?.models ?: emptySet()
-            val variables = models.singleOrNull()?.let {it.entries.filter {it.value}.map {it.key}}?.toSet() ?: emptySet()
-            val behaviour = variables.mapNotNull {behaviourDictionary[it]}.singleOrNull() ?: return/* println("ambiguous behaviour specified: $variables")*/
+            val beliefState = And.make(beliefState) ?: contradiction
+            val behaviour = behaviourDictionary.find {beliefState isSubsetOf it.first}?.second
+                ?: return /*println("ambiguous behaviour specified: $beliefState, $behaviourDictionary")*/
             when (behaviour)
             {
                 is Behaviour.Wander ->
@@ -133,11 +130,11 @@ class VirtualAgentController(agentId:Double):AgentController(agentId)
 
         private inner class Wander:AiState
         {
-            private val TURN_MAX_SPEED:Double = 5.0
-            private val TURN_THRESHOLD:Double = 5.0
+            private val TURN_MAX_SPEED:Double = 3.0
+            private val TURN_THRESHOLD:Double = 3.0
 
             private val MOVE_MAX_UPDATE_DURATION:Int = 50
-            private val MOVE_SPEED:Double = 0.1
+            private val MOVE_SPEED:Double = 0.075
 
             private val stateMachine = StateMachine<AiState>(Turn())
 

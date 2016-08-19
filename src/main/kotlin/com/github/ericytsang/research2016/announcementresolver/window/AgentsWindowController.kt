@@ -288,7 +288,7 @@ class AgentsWindowController:Initializable
                 // todo: instead of setting their belief state, should be revising instead!!
                 agentController.setBeliefState(rowData.problemInstance.initialBeliefState)
                 agentController.setBeliefRevisionStrategy(rowData.problemInstance.beliefRevisionStrategy)
-                agentController.setBehaviourDictionary(behaviouralDictionaryWindowController.behaviouralDictionaryTableView.items.associate {it.variable to it.behavior})
+                agentController.setBehaviourDictionary(behaviouralDictionaryWindowController.behaviouralDictionaryTableView.items.map {it.proposition to it.behavior})
                 agentController.bodyColor = rowData.color
 
                 // setting the position and direction of the robot to the user-specified one if it exists

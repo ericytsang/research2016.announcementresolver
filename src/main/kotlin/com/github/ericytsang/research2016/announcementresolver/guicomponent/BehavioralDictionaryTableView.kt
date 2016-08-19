@@ -7,7 +7,10 @@ import com.github.ericytsang.lib.javafxutils.EditableTableView
 import com.github.ericytsang.lib.javafxutils.ValidatableTextField
 import com.github.ericytsang.research2016.announcementresolver.simulation.Behaviour
 import com.github.ericytsang.research2016.beliefrevisor.gui.Dimens
+import com.github.ericytsang.research2016.propositionallogic.Proposition
 import com.github.ericytsang.research2016.propositionallogic.Variable
+import com.github.ericytsang.research2016.propositionallogic.makeFrom
+import com.github.ericytsang.research2016.propositionallogic.toParsableString
 import com.sun.javafx.collections.ObservableListWrapper
 import javafx.beans.property.SimpleStringProperty
 import javafx.beans.value.ObservableValue
@@ -35,7 +38,7 @@ class BehavioralDictionaryTableView:EditableTableView<BehavioralDictionaryTableV
             {
                 constraints += SimpleConstraint.make("variables must be unique")
                 {
-                    it.newValue.map {it.variable}.toSet().size == it.newValue.size
+                    it.newValue.map {it.proposition}.toSet().size == it.newValue.size
                 }
             }
         }
@@ -47,7 +50,7 @@ class BehavioralDictionaryTableView:EditableTableView<BehavioralDictionaryTableV
             text = "Variable"
             cellValueFactory = Callback<TableColumn.CellDataFeatures<RowData,String>,ObservableValue<String>>()
             {
-                SimpleStringProperty(it.value.variable.toString())
+                SimpleStringProperty(it.value.proposition.toString())
             }
         })
         columns.add(TableColumn<RowData,String>().apply()
@@ -72,7 +75,7 @@ class BehavioralDictionaryTableView:EditableTableView<BehavioralDictionaryTableV
             {
                 // todo: better error messages
                 return RowData(
-                    Variable.fromString(inputDialog.variableTextField.text),
+                    Proposition.makeFrom(inputDialog.variableTextField.text),
                     inputDialog.behaviorComboBox.comboBox.value.build())
             }
             catch (ex:Exception)
@@ -90,7 +93,7 @@ class BehavioralDictionaryTableView:EditableTableView<BehavioralDictionaryTableV
     /**
      * holds the data for a single row in [BehavioralDictionaryTableView].
      */
-    data class RowData(val variable:Variable,val behavior:Behaviour)
+    data class RowData(val proposition:Proposition,val behavior:Behaviour)
 
     /**
      * used to gather user input to create or edit [RowData] instances.
@@ -100,7 +103,7 @@ class BehavioralDictionaryTableView:EditableTableView<BehavioralDictionaryTableV
         val variableTextField = TextField().apply()
         {
             // set control value to reflect model data
-            text = model?.variable?.toString() ?: ""
+            text = model?.proposition?.toParsableString() ?: ""
         }
 
         val behaviorComboBox = ComplexComboBox<ComplexComboBox.OptionalBuilder<Behaviour>,Behaviour>().apply()

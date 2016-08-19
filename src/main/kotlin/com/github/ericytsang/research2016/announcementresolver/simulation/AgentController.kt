@@ -41,7 +41,7 @@ abstract class AgentController(val agentId:Double):Simulation.Entity<CanvasRende
      * sends the behaviour dictionary to the remote agent so it knows how to
      * behave based on its belief state.
      */
-    abstract fun setBehaviourDictionary(dictionary:Map<Variable,Behaviour>)
+    abstract fun setBehaviourDictionary(behaviourDictionary:List<Pair<Proposition,Behaviour>>)
 
     /**
      * color used to represent this agent in the [CanvasRenderer].
