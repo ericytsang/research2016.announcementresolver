@@ -24,7 +24,7 @@ class SimulatorWindowController:Initializable
     {
         canvas.widthProperty().bind(parentLayout.widthProperty())
         canvas.heightProperty().bind(parentLayout.heightProperty())
-        simulation = Simulation(CanvasRenderer(canvas,32.0),Looper.Factory {SimpleLooper(it)})
+        simulation = Simulation(CanvasRenderer(canvas,32.0),Looper.Factory.new {SimpleLooper(it)})
         simulation.entityToCellsMap += Background() to emptySet()
     }
 }

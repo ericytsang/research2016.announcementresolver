@@ -1,8 +1,11 @@
 package com.github.ericytsang.research2016.announcementresolver.window
 
+import com.github.ericytsang.lib.simulation.Simulation
 import com.github.ericytsang.research2016.announcementresolver.guicomponent.AgentsTableView
 import com.github.ericytsang.research2016.announcementresolver.guicomponent.DisplayModeComboBox
 import com.github.ericytsang.research2016.announcementresolver.guicomponent.RevisionFunctionConfigPanel
+import com.github.ericytsang.research2016.announcementresolver.simulation.AgentController
+import com.github.ericytsang.research2016.announcementresolver.simulation.VirtualAgentController
 import com.github.ericytsang.research2016.announcementresolver.simulation.Wall
 import com.github.ericytsang.research2016.announcementresolver.toJSONObject
 import com.github.ericytsang.research2016.announcementresolver.toProblemInstance
@@ -111,14 +114,17 @@ class AgentsWindowController:Initializable
      */
     private var announcementFinderThread = thread {}
 
+    private lateinit var behaviouralDictionaryWindowController:BehaviouralDictionaryWindowController
+
     /**
      * window used by user to map variables to robot behaviours.
      */
-    private val dictionaryWindow = Stage().apply()
+    private val behaviouralDictionaryWindow = Stage().apply()
     {
-        val root = FXMLLoader(this@AgentsWindowController.javaClass.classLoader.getResource("behavioraldictionarywindow.fxml")).load<Parent>()
-        scene = Scene(root)
+        val loader = FXMLLoader(this@AgentsWindowController.javaClass.classLoader.getResource("behavioraldictionarywindow.fxml"))
+        scene = Scene(loader.load<Parent>())
         title = "Behavioural Dictionary"
+        behaviouralDictionaryWindowController = loader.getController()
     }
 
     private lateinit var obstacleWindowController:ObstacleWindowController
@@ -165,14 +171,14 @@ class AgentsWindowController:Initializable
 
         /*
          * [toggleDictionaryWindowCheckMenuItem] displays a check mark beside
-         * itself when [dictionaryWindow] is showing; no check mark is displayed
+         * itself when [behaviouralDictionaryWindow] is showing; no check mark is displayed
          * otherwise.
          */
-        dictionaryWindow.scene.window.onShown = EventHandler()
+        behaviouralDictionaryWindow.scene.window.onShown = EventHandler()
         {
             toggleDictionaryWindowCheckMenuItem.isSelected = true
         }
-        dictionaryWindow.scene.window.onHidden = EventHandler()
+        behaviouralDictionaryWindow.scene.window.onHidden = EventHandler()
         {
             toggleDictionaryWindowCheckMenuItem.isSelected = false
         }
@@ -211,9 +217,42 @@ class AgentsWindowController:Initializable
          */
         obstacleWindowController.obstacleTableView.items.addListener(InvalidationListener()
         {
-            simulationWindowController.simulation.entityToCellsMap.keys.removeAll {it is Wall}
+            val keysToRemove = simulationWindowController.simulation.entityToCellsMap.keys.filter {it is Wall}
+            keysToRemove.forEach()
+            {
+                simulationWindowController.simulation.entityToCellsMap.remove(it)
+            }
+
             simulationWindowController.simulation.entityToCellsMap
                 .putAll(obstacleWindowController.obstacleTableView.items.associate {Wall(it.cell1,it.cell2) to setOf(it.cell1,it.cell2)})
+        })
+
+        /*
+         * when the agent table view is modified, turn them into
+         * [AgentController] objects, and add them to the simulation.
+         */
+        agentsTableView.items.addListener(InvalidationListener()
+        {
+            println("agentsTableView.items: ${agentsTableView.items}")
+            val keysToRemove = simulationWindowController.simulation.entityToCellsMap.keys.filter {it is AgentController}
+            keysToRemove.forEach()
+            {
+                simulationWindowController.simulation.entityToCellsMap.remove(it)
+            }
+
+            // todo: make this instantiate virtual or actual robot connections...
+            // todo: make connecting to agents asynchronsous because...it won't be an instantaneous thing when connecting to real robots
+            val newAgentControllers = agentsTableView.items.map()
+            {
+                val agentController = VirtualAgentController()
+                agentController.connect()
+                agentController.setBeliefState(it.problemInstance.initialBeliefState)
+                agentController.setBeliefRevisionStrategy(it.problemInstance.beliefRevisionStrategy)
+                agentController.setBehaviourDictionary(behaviouralDictionaryWindowController.behaviouralDictionaryTableView.items.associate {it.variable to it.behavior})
+                agentController
+            }
+            simulationWindowController.simulation.entityToCellsMap
+                .putAll(newAgentControllers.associate {it to emptySet<Simulation.Cell>()})
         })
     }
 
@@ -270,9 +309,11 @@ class AgentsWindowController:Initializable
                 // display the revised belief states
                 if (announcement != null)
                 {
-                    agentsTableView.items = agentsTableView.items
+                    val oldItems = agentsTableView.items.toList()
+                    agentsTableView.items.clear()
+                    agentsTableView.items.addAll(oldItems
                         .map {it.copy(actualK = it.problemInstance.reviseBy(announcement))}
-                        .let {ObservableListWrapper(it)}
+                        .let {ObservableListWrapper(it)})
                     Platform.runLater {agentsTableView.refresh()}
                 }
             }
@@ -311,13 +352,13 @@ class AgentsWindowController:Initializable
      */
     @FXML private fun toggleDictionaryWindow()
     {
-        if (dictionaryWindow.isShowing)
+        if (behaviouralDictionaryWindow.isShowing)
         {
-            dictionaryWindow.hide()
+            behaviouralDictionaryWindow.hide()
         }
         else
         {
-            dictionaryWindow.show()
+            behaviouralDictionaryWindow.show()
         }
     }
 
@@ -397,13 +438,14 @@ class AgentsWindowController:Initializable
                 .inputStream()
                 .use {it.readBytes().let {String(it)}}
 
-            agentsTableView.items = fileText
+            agentsTableView.items.clear()
+            agentsTableView.items.addAll(fileText
                 .let {JSONArray(it)}
                 .map {it as JSONObject}
                 .map {it.toProblemInstance()}
                 .map {AgentsTableView.RowData(it,RevisionFunctionConfigPanel(),emptySet())}
                 .apply {forEach {it.revisionFunctionConfigPanel.setValuesFrom(it.problemInstance.beliefRevisionStrategy)}}
-                .let {ObservableListWrapper(it)}
+                .let {ObservableListWrapper(it)})
         }
     }
 }

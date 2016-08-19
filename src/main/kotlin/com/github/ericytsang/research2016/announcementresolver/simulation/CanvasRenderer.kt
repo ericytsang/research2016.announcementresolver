@@ -1,5 +1,8 @@
 package com.github.ericytsang.research2016.announcementresolver.simulation
 
+import com.github.ericytsang.lib.oopatterns.SimpleProperty
+import com.github.ericytsang.lib.oopatterns.get
+import com.github.ericytsang.lib.oopatterns.set
 import com.github.ericytsang.lib.simulation.Renderer
 import javafx.application.Platform
 import javafx.scene.canvas.Canvas
@@ -8,7 +11,7 @@ import javafx.scene.transform.Affine
 import javafx.scene.transform.Transform
 import java.util.concurrent.CountDownLatch
 
-class CanvasRenderer(val canvas:Canvas,_cellLength:Double):Renderer<CanvasRenderer.Renderee>
+class CanvasRenderer constructor(val canvas:Canvas,_cellLength:Double):Renderer<CanvasRenderer.Renderee>
 {
     /**
      * last transform applied to the [GraphicsContext] of [canvas] in while
@@ -21,23 +24,22 @@ class CanvasRenderer(val canvas:Canvas,_cellLength:Double):Renderer<CanvasRender
     /**
      * length of a cell used when rendering [Entity] objects.
      */
-    var cellLength = _cellLength
-
-        set(value)
+    val cellLength = SimpleProperty.new(0.0)
+    {
+        value ->
+        if (value <= 0.0)
         {
-            if (value <= 0.0)
-            {
-                throw IllegalArgumentException("value ($value) cannot be <= 0")
-            }
-            else
-            {
-                field = value
-            }
+            throw IllegalArgumentException("value ($value) cannot be <= 0")
         }
+        else
+        {
+            field = value
+        }
+    }
 
     init
     {
-        this.cellLength = _cellLength
+        this.cellLength.set(_cellLength)
     }
 
     override fun render(renderees:Iterable<Renderee>)
@@ -48,7 +50,11 @@ class CanvasRenderer(val canvas:Canvas,_cellLength:Double):Renderer<CanvasRender
             val context = canvas.graphicsContext2D
 
             // apply all transformations that are common to all entities
-            //context.transform = viewTransform.clone()
+            context.transform = Transform.affine(1.0,0.0,0.0,1.0,0.0,0.0).apply()
+            {
+                appendTranslation(canvas.width/2,canvas.height/2)
+                append(viewTransform)
+            }
 
             // render every entity
             renderees.sortedBy {it.renderLayer}.forEach()
@@ -58,12 +64,10 @@ class CanvasRenderer(val canvas:Canvas,_cellLength:Double):Renderer<CanvasRender
                 // apply entity specific transformations, then render the entity
                 context.transform = context.transform.apply()
                 {
-                    appendTranslation(canvas.width/2,canvas.height/2)
-                    append(viewTransform)
-                    appendTranslation(cellLength*it.position.x,cellLength*it.position.y)
+                    appendTranslation(cellLength.get()*it.position.x,cellLength.get()*it.position.y)
                     appendRotation(it.direction)
                 }
-                it.render(context,viewTransform.clone(),cellLength)
+                it.render(context,viewTransform.clone(),cellLength.get())
 
                 context.restore()
             }

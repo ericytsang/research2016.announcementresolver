@@ -124,6 +124,10 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
     /**
      * each [RowData] instance can be represented as a row in [AgentsTableView].
      */
+    // todo: allow users to specify an initial direction for the agent
+    // todo: allow users to specify an initial position for the agent
+    // todo: allow users to specify a color for the robot
+    // todo: generate a secret ID that doesn't get shown to the user.....so the program can tell which rows were previously existing rows that were edited, which rows were removed, and which ones were added
     data class RowData(
         val problemInstance:AnnouncementResolutionStrategy.ProblemInstance,
         val revisionFunctionConfigPanel:RevisionFunctionConfigPanel,
