@@ -20,6 +20,8 @@ class SimulatorWindowController:Initializable
 
     lateinit var simulation:Simulation<CanvasRenderer.Renderee>
 
+    // todo: allow user to right click on the smulator, and add stuff to the simulation via a context menu...
+
     override fun initialize(location:URL?,resources:ResourceBundle?)
     {
         simulation = Simulation(CanvasRenderer(canvas,32.0),Looper.Factory.new {SimpleLooper(it)})

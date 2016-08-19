@@ -129,6 +129,8 @@ class VirtualAgentController(agentId:Double):AgentController(agentId)
 
         }
 
+        // todo: make agents avoid obstacles
+
         private inner class Wander:AiState
         {
             private val TURN_MAX_SPEED:Double = 5.0
