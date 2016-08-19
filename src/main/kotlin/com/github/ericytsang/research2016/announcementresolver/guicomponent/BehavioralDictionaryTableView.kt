@@ -47,7 +47,7 @@ class BehavioralDictionaryTableView:EditableTableView<BehavioralDictionaryTableV
         // add columns to the table view
         columns.add(TableColumn<RowData,String>().apply()
         {
-            text = "Variable"
+            text = "Proposition"
             cellValueFactory = Callback<TableColumn.CellDataFeatures<RowData,String>,ObservableValue<String>>()
             {
                 SimpleStringProperty(it.value.proposition.toString())
@@ -141,7 +141,7 @@ class BehavioralDictionaryTableView:EditableTableView<BehavioralDictionaryTableV
             dialogPane.content = VBox().apply()
             {
                 spacing = Dimens.KEYLINE_SMALL.toDouble()
-                children += Label("Variable:")
+                children += Label("Proposition:")
                 children += variableTextField
                 children += Label("Behaviour:")
                 children += behaviorComboBox
