@@ -8,7 +8,7 @@ import javafx.scene.canvas.GraphicsContext
 import javafx.scene.paint.Color
 import javafx.scene.transform.Affine
 
-abstract class AgentController:Simulation.Entity<CanvasRenderer.Renderee>,CanvasRenderer.Renderee
+abstract class AgentController(val agentId:Double):Simulation.Entity<CanvasRenderer.Renderee>,CanvasRenderer.Renderee
 {
     /**
      * try to connect this controller to the remote agent. this could be trying
@@ -57,7 +57,7 @@ abstract class AgentController:Simulation.Entity<CanvasRenderer.Renderee>,Canvas
     final override fun render(graphicsContext:GraphicsContext,viewTransform:Affine,cellLength:Double)
     {
         graphicsContext.fill = bodyColor
-        graphicsContext.fillRect(-cellLength*.3,-cellLength*.3,cellLength*.6,cellLength*.6)
+        graphicsContext.fillOval(-cellLength*.25,-cellLength*.25,cellLength*.5,cellLength*.5)
         graphicsContext.stroke = bodyColor
         graphicsContext.strokeLine(0.0,0.0,cellLength,0.0)
     }

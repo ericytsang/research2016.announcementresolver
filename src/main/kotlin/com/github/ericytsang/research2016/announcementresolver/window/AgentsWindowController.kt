@@ -5,6 +5,8 @@ import com.github.ericytsang.research2016.announcementresolver.guicomponent.Agen
 import com.github.ericytsang.research2016.announcementresolver.guicomponent.DisplayModeComboBox
 import com.github.ericytsang.research2016.announcementresolver.guicomponent.RevisionFunctionConfigPanel
 import com.github.ericytsang.research2016.announcementresolver.simulation.AgentController
+import com.github.ericytsang.research2016.announcementresolver.simulation.Behaviour
+import com.github.ericytsang.research2016.announcementresolver.simulation.CanvasRenderer
 import com.github.ericytsang.research2016.announcementresolver.simulation.VirtualAgentController
 import com.github.ericytsang.research2016.announcementresolver.simulation.Wall
 import com.github.ericytsang.research2016.announcementresolver.toJSONObject
@@ -17,7 +19,6 @@ import com.github.ericytsang.research2016.propositionallogic.toDnf
 import com.sun.javafx.collections.ObservableListWrapper
 import javafx.application.Platform
 import javafx.beans.InvalidationListener
-import javafx.collections.ListChangeListener
 import javafx.event.EventHandler
 import javafx.fxml.FXML
 import javafx.fxml.FXMLLoader
@@ -27,6 +28,7 @@ import javafx.scene.Scene
 import javafx.scene.control.Button
 import javafx.scene.control.CheckMenuItem
 import javafx.scene.control.Label
+import javafx.scene.paint.Color
 import javafx.stage.FileChooser
 import javafx.stage.Stage
 import org.json.JSONArray
@@ -170,6 +172,16 @@ class AgentsWindowController:Initializable
         }
 
         /*
+         * when the behaviouralDictionaryWindow's tableview items are changed,
+         * update the dictionaries in the agents as well
+         */
+        behaviouralDictionaryWindowController.behaviouralDictionaryTableView.items.addListener(InvalidationListener()
+        {
+            val oldItems = agentsTableView.items.toList()
+            agentsTableView.items.setAll(oldItems)
+        })
+
+        /*
          * [toggleDictionaryWindowCheckMenuItem] displays a check mark beside
          * itself when [behaviouralDictionaryWindow] is showing; no check mark is displayed
          * otherwise.
@@ -233,27 +245,90 @@ class AgentsWindowController:Initializable
          */
         agentsTableView.items.addListener(InvalidationListener()
         {
-            println("agentsTableView.items: ${agentsTableView.items}")
-            val keysToRemove = simulationWindowController.simulation.entityToCellsMap.keys.filter {it is AgentController}
+            val existingAgents = simulationWindowController.simulation.entityToCellsMap.keys
+                .filter {it is AgentController}
+                .map {it as AgentController}
+                .associate {it.agentId to it}
+
+            // resolve agents removed from the table view and remove them from the simulation
+            val remainingAgentIds = agentsTableView.items
+                .map {it.agentId}
+            val keysToRemove = existingAgents
+                .filter {it.value.agentId !in remainingAgentIds}
+                .map {it.value}
             keysToRemove.forEach()
             {
                 simulationWindowController.simulation.entityToCellsMap.remove(it)
             }
 
+            // resolve updated agents in the table update them in the simulation
+            val updatedRows = agentsTableView.items.filter {it.agentId in existingAgents.keys}
+            updatedRows.forEach()
+            {
+                rowData ->
+                val agentController = existingAgents[rowData.agentId]!!
+                // todo: instead of setting their belief state, should be revising instead!!
+                agentController.setBeliefState(rowData.problemInstance.initialBeliefState)
+                agentController.setBeliefRevisionStrategy(rowData.problemInstance.beliefRevisionStrategy)
+                agentController.setBehaviourDictionary(behaviouralDictionaryWindowController.behaviouralDictionaryTableView.items.associate {it.variable to it.behavior})
+                agentController.bodyColor = rowData.color
+
+                // setting the position and direction of the robot to the user-specified one if it exists
+                if (rowData.newPosition != null &&
+                    rowData.newDirection != null)
+                {
+                    agentController.position = rowData.newPosition.let {CanvasRenderer.Position(it.x.toDouble(),it.y.toDouble())}
+                    agentController.direction = when (rowData.newDirection)
+                    {
+                        Behaviour.CardinalDirection.NORTH -> 270.0
+                        Behaviour.CardinalDirection.EAST -> 0.0
+                        Behaviour.CardinalDirection.SOUTH -> 90.0
+                        Behaviour.CardinalDirection.WEST -> 180.0
+                    }
+                }
+            }
+
+            // resolve new agents added to the table view and add them to the simulation
+            val newRows = agentsTableView.items.filter {it.agentId !in existingAgents.keys}
+
             // todo: make this instantiate virtual or actual robot connections...
             // todo: make connecting to agents asynchronsous because...it won't be an instantaneous thing when connecting to real robots
-            val newAgentControllers = agentsTableView.items.map()
+            val newAgentControllers = newRows.map()
             {
-                val agentController = VirtualAgentController()
+                rowData ->
+                val agentController = VirtualAgentController(rowData.agentId)
                 agentController.connect()
-                agentController.setBeliefState(it.problemInstance.initialBeliefState)
-                agentController.setBeliefRevisionStrategy(it.problemInstance.beliefRevisionStrategy)
+                agentController.setBeliefState(rowData.problemInstance.initialBeliefState)
+                agentController.setBeliefRevisionStrategy(rowData.problemInstance.beliefRevisionStrategy)
                 agentController.setBehaviourDictionary(behaviouralDictionaryWindowController.behaviouralDictionaryTableView.items.associate {it.variable to it.behavior})
+                agentController.bodyColor = rowData.color
+
+                // setting the position and direction of the robot to the user-specified one if it exists
+                if (rowData.newPosition != null &&
+                    rowData.newDirection != null)
+                {
+                    agentController.position = rowData.newPosition.let {CanvasRenderer.Position(it.x.toDouble(),it.y.toDouble())}
+                    agentController.direction = when (rowData.newDirection)
+                    {
+                        Behaviour.CardinalDirection.NORTH -> 270.0
+                        Behaviour.CardinalDirection.EAST -> 0.0
+                        Behaviour.CardinalDirection.SOUTH -> 90.0
+                        Behaviour.CardinalDirection.WEST -> 180.0
+                    }
+                }
+
                 agentController
             }
             simulationWindowController.simulation.entityToCellsMap
                 .putAll(newAgentControllers.associate {it to emptySet<Simulation.Cell>()})
         })
+    }
+
+    fun hideAllPeripheralWindows()
+    {
+        behaviouralDictionaryWindow.hide()
+        obstacleWindow.hide()
+        simulationWindow.hide()
     }
 
     /**
@@ -309,11 +384,14 @@ class AgentsWindowController:Initializable
                 // display the revised belief states
                 if (announcement != null)
                 {
-                    val oldItems = agentsTableView.items.toList()
-                    agentsTableView.items.clear()
-                    agentsTableView.items.addAll(oldItems
+                    val newListItems = agentsTableView.items
                         .map {it.copy(actualK = it.problemInstance.reviseBy(announcement))}
-                        .let {ObservableListWrapper(it)})
+
+                    for (i in newListItems.indices)
+                    {
+                        agentsTableView.items[i] = newListItems[i]
+                    }
+
                     Platform.runLater {agentsTableView.refresh()}
                 }
             }
@@ -337,11 +415,16 @@ class AgentsWindowController:Initializable
         {
             val newListItems = agentsTableView.items.map()
             {
-                val newProblemInstance = it.problemInstance.copy(initialBeliefState = it.actualK)
-                AgentsTableView.RowData(newProblemInstance,it.revisionFunctionConfigPanel,emptySet())
+                existingRowData ->
+                val newProblemInstance = existingRowData.problemInstance.copy(initialBeliefState = existingRowData.actualK)
+                existingRowData.copy(problemInstance = newProblemInstance,actualK = emptySet())
             }
-            agentsTableView.items.clear()
-            agentsTableView.items.addAll(newListItems)
+
+            for (i in newListItems.indices)
+            {
+                agentsTableView.items[i] = newListItems[i]
+            }
+
             agentsTableView.refresh()
         }
     }
@@ -439,11 +522,12 @@ class AgentsWindowController:Initializable
                 .use {it.readBytes().let {String(it)}}
 
             agentsTableView.items.clear()
+            // todo: allow loading from files.....right now, functionality was removed because we need to be able to save and load initial positions for robots
             agentsTableView.items.addAll(fileText
                 .let {JSONArray(it)}
                 .map {it as JSONObject}
                 .map {it.toProblemInstance()}
-                .map {AgentsTableView.RowData(it,RevisionFunctionConfigPanel(),emptySet())}
+                .map {AgentsTableView.RowData(it,RevisionFunctionConfigPanel(),emptySet(),Simulation.Cell.getElseMake(0,0),Behaviour.CardinalDirection.EAST,Color.RED,Math.random())}
                 .apply {forEach {it.revisionFunctionConfigPanel.setValuesFrom(it.problemInstance.beliefRevisionStrategy)}}
                 .let {ObservableListWrapper(it)})
         }

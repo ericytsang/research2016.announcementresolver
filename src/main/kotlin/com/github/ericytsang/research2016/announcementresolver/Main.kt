@@ -1,5 +1,6 @@
 package com.github.ericytsang.research2016.announcementresolver
 
+import com.github.ericytsang.research2016.announcementresolver.window.AgentsWindowController
 import org.json.JSONArray
 import org.json.JSONObject
 import com.github.ericytsang.research2016.propositionallogic.And
@@ -20,6 +21,7 @@ import com.github.ericytsang.research2016.propositionallogic.makeFrom
 import com.github.ericytsang.research2016.propositionallogic.toDnf
 import com.github.ericytsang.research2016.propositionallogic.toParsableString
 import javafx.application.Application
+import javafx.event.EventHandler
 import javafx.fxml.FXMLLoader
 import javafx.scene.Parent
 import javafx.scene.Scene
@@ -38,10 +40,18 @@ object GuiLauncher
     {
         override fun start(primaryStage:Stage)
         {
-            val root = FXMLLoader(javaClass.classLoader.getResource("agentswindow.fxml")).load<Parent>()
+            // load the main content pain and add it to a window and show it
+            val loader = FXMLLoader(javaClass.classLoader.getResource("agentswindow.fxml"))
             primaryStage.title = "Announcement Finder"
-            primaryStage.scene = Scene(root)
+            primaryStage.scene = Scene(loader.load<Parent>())
             primaryStage.show()
+
+            // when primaryStage window is closed, close all peripheral windows too.
+            val controller = loader.getController<AgentsWindowController>()
+            primaryStage.scene.window.onHidden = EventHandler()
+            {
+                controller.hideAllPeripheralWindows()
+            }
         }
     }
 }

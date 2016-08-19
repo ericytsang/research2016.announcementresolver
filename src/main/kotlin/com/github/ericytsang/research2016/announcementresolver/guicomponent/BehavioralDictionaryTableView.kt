@@ -155,8 +155,8 @@ class BehavioralDictionaryTableView:EditableTableView<BehavioralDictionaryTableV
 
         private class GuardBehaviorOption():ComplexComboBox.OptionalBuilder<Behaviour>
         {
-            val xPositionTextField = ValidatableTextField.makeNumericTextField()
-            val yPositionTextField = ValidatableTextField.makeNumericTextField()
+            val xPositionTextField = ValidatableTextField.makeIntegerTextField()
+            val yPositionTextField = ValidatableTextField.makeIntegerTextField()
             val directionComboBox = ComboBox<Behaviour.CardinalDirection>().apply()
             {
                 items.addAll(Behaviour.CardinalDirection.values())

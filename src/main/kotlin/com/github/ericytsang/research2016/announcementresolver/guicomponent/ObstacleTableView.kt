@@ -77,16 +77,16 @@ class ObstacleTableView:EditableTableView<ObstacleTableView.RowData>()
 
     private class InputDialog(val previousInput:RowData?):Alert(AlertType.NONE)
     {
-        val position1XTextField = ValidatableTextField.makeNumericTextField()
+        val position1XTextField = ValidatableTextField.makeIntegerTextField()
             .apply {text = previousInput?.cell1?.x?.toString() ?: ""}
 
-        val position1YTextField = ValidatableTextField.makeNumericTextField()
+        val position1YTextField = ValidatableTextField.makeIntegerTextField()
             .apply {text = previousInput?.cell1?.y?.toString() ?: ""}
 
-        val position2XTextField = ValidatableTextField.makeNumericTextField()
+        val position2XTextField = ValidatableTextField.makeIntegerTextField()
             .apply {text = previousInput?.cell2?.x?.toString() ?: ""}
 
-        val position2YTextField = ValidatableTextField.makeNumericTextField()
+        val position2YTextField = ValidatableTextField.makeIntegerTextField()
             .apply {text = previousInput?.cell2?.y?.toString() ?: ""}
 
         init

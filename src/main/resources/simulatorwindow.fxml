@@ -1,11 +1,19 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.canvas.Canvas?>
+<?import javafx.scene.control.ScrollPane?>
 <VBox
     xmlns:fx="http://javafx.com/fxml"
     fx:id="parentLayout"
     fx:controller="com.github.ericytsang.research2016.announcementresolver.window.SimulatorWindowController"
-    prefWidth="400.0"
-    prefHeight="400.0">
-    <Canvas
-        fx:id="canvas"/>
+    prefWidth="600.0"
+    prefHeight="600.0">
+    <ScrollPane
+        pannable="true"
+        hvalue="0.5"
+        vvalue="0.5">
+        <Canvas
+            width="4000.0"
+            height="4000.0"
+            fx:id="canvas"/>
+    </ScrollPane>
 </VBox>

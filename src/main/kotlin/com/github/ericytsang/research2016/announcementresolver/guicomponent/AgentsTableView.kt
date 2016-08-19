@@ -1,6 +1,10 @@
 package com.github.ericytsang.research2016.announcementresolver.guicomponent
 
 import com.github.ericytsang.lib.javafxutils.EditableTableView
+import com.github.ericytsang.lib.javafxutils.ValidatableTextField
+import com.github.ericytsang.lib.simulation.Simulation
+import com.github.ericytsang.research2016.announcementresolver.NamedValue
+import com.github.ericytsang.research2016.announcementresolver.simulation.Behaviour
 import com.github.ericytsang.research2016.beliefrevisor.gui.Dimens
 import com.github.ericytsang.research2016.propositionallogic.AnnouncementResolutionStrategy
 import com.github.ericytsang.research2016.propositionallogic.Proposition
@@ -11,14 +15,25 @@ import javafx.beans.property.SimpleStringProperty
 import javafx.event.EventHandler
 import javafx.scene.control.Alert
 import javafx.scene.control.ButtonType
+import javafx.scene.control.ComboBox
 import javafx.scene.control.Label
 import javafx.scene.control.TableColumn
 import javafx.scene.control.TextField
 import javafx.scene.layout.VBox
+import javafx.scene.paint.Color
 import javafx.util.Callback
 
 class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
 {
+    companion object
+    {
+        /**
+         * the number attempts the dialog box tried to generate a unique row id
+         * when creating a new row (not editing an existing one)
+         */
+        const val NUM_ATTEMPTS_TO_GENERATE_NEW_ROW_ID = 100
+    }
+
     init
     {
         // add columns to the table view
@@ -77,10 +92,52 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
             try
             {
                 // todo: better error messages
+
+                // parse initial K, target K and belief revision strategy
                 val initialK = inputDialog.initialKTextField.text.split(",").map {Proposition.makeFrom(it)}.toSet()
                 val targetK = Proposition.makeFrom(inputDialog.targetKTextField.text)
                 val beliefRevisionStrategy = inputDialog.operatorInputPane.beliefRevisionStrategy ?: throw IllegalArgumentException("A belief revision operation must be specified")
-                return RowData(AnnouncementResolutionStrategy.ProblemInstance(initialK,targetK,beliefRevisionStrategy),inputDialog.operatorInputPane,emptySet())
+
+                // get the user's positioning and direction input. either the x
+                // position, y position and direction input are all there, or
+                // they are all not there...
+                val newPosition:Simulation.Cell?
+                val newDirection:Behaviour.CardinalDirection?
+                if (inputDialog.initialXPositionTextField.text.isNotBlank() &&
+                    inputDialog.initialYPositionTextField.text.isNotBlank() &&
+                    inputDialog.directionComboBox.value.value != null)
+                {
+                    val newXPosition = inputDialog.initialXPositionTextField.text.toInt()
+                    val newYPosition = inputDialog.initialYPositionTextField.text.toInt()
+                    newPosition = Simulation.Cell.getElseMake(newXPosition,newYPosition)
+                    newDirection = inputDialog.directionComboBox.value.value
+                }
+                else
+                {
+                    newPosition = null
+                    newDirection = null
+                }
+
+                val robotColor = inputDialog.colorComboBox.value.value
+
+                // try to use the row id from the previous input...if it doesn't exist, try to generate a new one that hopefully will not collide with another row...
+                val robotId = previousInput?.agentId ?: run()
+                {
+                    var remainingAttempts = NUM_ATTEMPTS_TO_GENERATE_NEW_ROW_ID
+                    while (remainingAttempts > 0)
+                    {
+                        val potentialId = Math.random()
+                        if (items.all {it.agentId != potentialId})
+                        {
+                            return@run potentialId
+                        }
+                        --remainingAttempts
+                    }
+                    throw IllegalArgumentException("failed to generate unique ID for row after $NUM_ATTEMPTS_TO_GENERATE_NEW_ROW_ID attempts")
+                }
+
+                // done parsing...construct and return the row data object
+                return RowData(AnnouncementResolutionStrategy.ProblemInstance(initialK,targetK,beliefRevisionStrategy),inputDialog.operatorInputPane,emptySet(),newPosition,newDirection,robotColor,robotId)
             }
             catch (ex:Exception)
             {
@@ -124,26 +181,61 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
     /**
      * each [RowData] instance can be represented as a row in [AgentsTableView].
      */
-    // todo: allow users to specify an initial direction for the agent
-    // todo: allow users to specify an initial position for the agent
-    // todo: allow users to specify a color for the robot
-    // todo: generate a secret ID that doesn't get shown to the user.....so the program can tell which rows were previously existing rows that were edited, which rows were removed, and which ones were added
     data class RowData(
         val problemInstance:AnnouncementResolutionStrategy.ProblemInstance,
         val revisionFunctionConfigPanel:RevisionFunctionConfigPanel,
-        val actualK:Set<Proposition>)
+        val actualK:Set<Proposition>,
+        val newPosition:Simulation.Cell?,
+        val newDirection:Behaviour.CardinalDirection?,
+        val color:Color,
+        val agentId:Double)
 
     /**
      * dialog shown when inserting new entries into the [AgentsTableView] or
      * editing existing entries.
      */
-    inner private class InputDialog(model:RowData?):Alert(AlertType.NONE)
+    inner private class InputDialog(val model:RowData?):Alert(AlertType.NONE)
     {
-        val initialKTextField = TextField()
-            .apply {text = model?.problemInstance?.initialBeliefState?.map {it.toParsableString()}?.joinToString(", ") ?: ""}
+        val initialKTextField = TextField().apply()
+        {
+            text = model?.problemInstance?.initialBeliefState?.map {it.toParsableString()}?.joinToString(", ") ?: ""
+        }
 
-        val targetKTextField = TextField()
-            .apply {text = model?.problemInstance?.targetBeliefState?.toParsableString() ?: ""}
+        val targetKTextField = TextField().apply()
+        {
+            text = model?.problemInstance?.targetBeliefState?.toParsableString() ?: ""
+        }
+
+        val colorComboBox = ComboBox<NamedValue<Color>>().apply()
+        {
+            items.add(NamedValue("Red",Color.RED))
+            items.add(NamedValue("Green",Color.GREEN))
+            items.add(NamedValue("Blue",Color.BLUE))
+            items.add(NamedValue("Yellow",Color.YELLOW))
+            items.add(NamedValue("Cyan",Color.CYAN))
+            items.add(NamedValue("Magenta",Color.MAGENTA))
+            value = items.find {it.value == model?.color} ?: items.first()
+        }
+
+        val initialXPositionTextField = ValidatableTextField.makeIntegerTextField().apply()
+        {
+            text = model?.newPosition?.x?.toString() ?: ""
+        }
+
+        val initialYPositionTextField = ValidatableTextField.makeIntegerTextField().apply()
+        {
+            text = model?.newPosition?.y?.toString() ?: ""
+        }
+
+        val directionComboBox = ComboBox<NamedValue<Behaviour.CardinalDirection?>>().apply()
+        {
+            items.add(NamedValue("Unspecified",null))
+            items.add(NamedValue("North",Behaviour.CardinalDirection.NORTH))
+            items.add(NamedValue("East",Behaviour.CardinalDirection.EAST))
+            items.add(NamedValue("South",Behaviour.CardinalDirection.SOUTH))
+            items.add(NamedValue("West",Behaviour.CardinalDirection.WEST))
+            value = items.find {it.value == model?.newDirection} ?: items.first()
+        }
 
         val operatorInputPane = model?.revisionFunctionConfigPanel
             ?: RevisionFunctionConfigPanel()
@@ -151,7 +243,7 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
         init
         {
             dialogPane.minWidth = 400.0
-            dialogPane.minHeight = 400.0
+            dialogPane.minHeight = 600.0
             isResizable = true
             headerText = " "
             buttonTypes.addAll(ButtonType.CANCEL,ButtonType.OK)
@@ -162,6 +254,14 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
                 children += initialKTextField
                 children += Label("Target belief state:")
                 children += targetKTextField
+                children += Label("Agent color:")
+                children += colorComboBox
+                children += Label("X Position:")
+                children += initialXPositionTextField
+                children += Label("Y Position:")
+                children += initialYPositionTextField
+                children += Label("Direction:")
+                children += directionComboBox
                 children += Label("Belief revision operator:")
                 children += operatorInputPane
             }
