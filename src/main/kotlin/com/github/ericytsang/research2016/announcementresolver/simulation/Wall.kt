@@ -9,7 +9,7 @@ data class Wall(val position1:Simulation.Cell,val position2:Simulation.Cell):Sim
 {
     companion object
     {
-        val COLOR_WALL:Color = Color.WHITE
+        val COLOR_WALL:Color = Color.BEIGE
     }
 
     init
@@ -43,8 +43,8 @@ data class Wall(val position1:Simulation.Cell,val position2:Simulation.Cell):Sim
 
     override fun render(graphicsContext:GraphicsContext,viewTransform:Affine,cellLength:Double)
     {
-        graphicsContext.stroke = COLOR_WALL
-        graphicsContext.strokeLine(cellLength*-0.5,0.0,cellLength*0.5,0.0)
+        graphicsContext.fill = COLOR_WALL
+        graphicsContext.fillRect(cellLength*-0.5,-1.5,cellLength,3.0)
     }
 
     override fun hashCode():Int

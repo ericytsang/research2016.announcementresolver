@@ -15,8 +15,8 @@ class Background:Simulation.Entity<CanvasRenderer.Renderee>,CanvasRenderer.Rende
     {
         val COLOR_BACKGROUND:Color = Color.BLACK
         val COLOR_GRID:Color = Color.WHITE
-        val ALPHA_GRID:Double = 0.25
-        val ALPHA_GRID_AXIS:Double = 0.5
+        val ALPHA_GRID:Double = 0.15
+        val ALPHA_GRID_AXIS:Double = 1.0
     }
 
     override fun update(simulation:Simulation<CanvasRenderer.Renderee>) = Unit
