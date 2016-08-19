@@ -11,10 +11,11 @@ import com.github.ericytsang.research2016.propositionallogic.Proposition
 import com.github.ericytsang.research2016.propositionallogic.Variable
 import com.github.ericytsang.research2016.propositionallogic.makeFrom
 import com.github.ericytsang.research2016.propositionallogic.toParsableString
+import javafx.beans.InvalidationListener
 import javafx.beans.property.SimpleStringProperty
-import javafx.event.EventHandler
 import javafx.scene.control.Alert
 import javafx.scene.control.ButtonType
+import javafx.scene.control.CheckBox
 import javafx.scene.control.ComboBox
 import javafx.scene.control.Label
 import javafx.scene.control.TableColumn
@@ -101,24 +102,13 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
                 // get the user's positioning and direction input. either the x
                 // position, y position and direction input are all there, or
                 // they are all not there...
-                val newPosition:Simulation.Cell?
-                val newDirection:Behaviour.CardinalDirection?
-                if (inputDialog.initialXPositionTextField.text.isNotBlank() &&
-                    inputDialog.initialYPositionTextField.text.isNotBlank() &&
-                    inputDialog.directionComboBox.value.value != null)
-                {
-                    val newXPosition = inputDialog.initialXPositionTextField.text.toInt()
-                    val newYPosition = inputDialog.initialYPositionTextField.text.toInt()
-                    newPosition = Simulation.Cell.getElseMake(newXPosition,newYPosition)
-                    newDirection = inputDialog.directionComboBox.value.value
-                }
-                else
-                {
-                    newPosition = null
-                    newDirection = null
-                }
+                val newPosition = Simulation.Cell.getElseMake(
+                    inputDialog.initialXPositionTextField.text.toInt(),
+                    inputDialog.initialYPositionTextField.text.toInt())
+                val newDirection = inputDialog.directionComboBox.value.value
 
                 val robotColor = inputDialog.colorComboBox.value.value
+                val shouldJumpToPosition = inputDialog.jumpToInitialPositionCheckBox.isSelected
 
                 // try to use the row id from the previous input...if it doesn't exist, try to generate a new one that hopefully will not collide with another row...
                 val robotId = previousInput?.agentId ?: run()
@@ -137,7 +127,7 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
                 }
 
                 // done parsing...construct and return the row data object
-                return RowData(AnnouncementResolutionStrategy.ProblemInstance(initialK,targetK,beliefRevisionStrategy),inputDialog.operatorInputPane,emptySet(),newPosition,newDirection,robotColor,robotId)
+                return RowData(AnnouncementResolutionStrategy.ProblemInstance(initialK,targetK,beliefRevisionStrategy),inputDialog.operatorInputPane,emptySet(),newPosition,newDirection,shouldJumpToPosition,robotColor,robotId)
             }
             catch (ex:Exception)
             {
@@ -185,8 +175,9 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
         val problemInstance:AnnouncementResolutionStrategy.ProblemInstance,
         val revisionFunctionConfigPanel:RevisionFunctionConfigPanel,
         val actualK:Set<Proposition>,
-        val newPosition:Simulation.Cell?,
-        val newDirection:Behaviour.CardinalDirection?,
+        val newPosition:Simulation.Cell,
+        val newDirection:Behaviour.CardinalDirection,
+        val shouldJumpToInitialPosition:Boolean,
         val color:Color,
         val agentId:Double)
 
@@ -219,22 +210,34 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
 
         val initialXPositionTextField = ValidatableTextField.makeIntegerTextField().apply()
         {
-            text = model?.newPosition?.x?.toString() ?: ""
+            text = model?.newPosition?.x?.toString() ?: "0"
         }
 
         val initialYPositionTextField = ValidatableTextField.makeIntegerTextField().apply()
         {
-            text = model?.newPosition?.y?.toString() ?: ""
+            text = model?.newPosition?.y?.toString() ?: "0"
         }
 
-        val directionComboBox = ComboBox<NamedValue<Behaviour.CardinalDirection?>>().apply()
+        val directionComboBox = ComboBox<NamedValue<Behaviour.CardinalDirection>>().apply()
         {
-            items.add(NamedValue("Unspecified",null))
             items.add(NamedValue("North",Behaviour.CardinalDirection.NORTH))
             items.add(NamedValue("East",Behaviour.CardinalDirection.EAST))
             items.add(NamedValue("South",Behaviour.CardinalDirection.SOUTH))
             items.add(NamedValue("West",Behaviour.CardinalDirection.WEST))
             value = items.find {it.value == model?.newDirection} ?: items.first()
+        }
+
+        val jumpToInitialPositionCheckBox = CheckBox().apply()
+        {
+            isSelected = model?.shouldJumpToInitialPosition ?: true
+            val listener = InvalidationListener()
+            {
+                initialXPositionTextField.isDisable = !isSelected
+                initialYPositionTextField.isDisable = !isSelected
+                directionComboBox.isDisable = !isSelected
+            }
+            selectedProperty().addListener(listener)
+            listener.invalidated(selectedProperty())
         }
 
         val operatorInputPane = model?.revisionFunctionConfigPanel
@@ -256,6 +259,8 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
                 children += targetKTextField
                 children += Label("Agent color:")
                 children += colorComboBox
+                children += Label("Jump to specified position:")
+                children += jumpToInitialPositionCheckBox
                 children += Label("X Position:")
                 children += initialXPositionTextField
                 children += Label("Y Position:")

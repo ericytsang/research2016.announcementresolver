@@ -37,6 +37,7 @@ import java.io.File
 import java.io.PrintWriter
 import java.net.URL
 import java.nio.file.Paths
+import java.util.LinkedHashMap
 import java.util.ResourceBundle
 import java.util.concurrent.CountDownLatch
 import kotlin.concurrent.thread
@@ -249,6 +250,7 @@ class AgentsWindowController:Initializable
                 .filter {it is AgentController}
                 .map {it as AgentController}
                 .associate {it.agentId to it}
+                .let {LinkedHashMap(it)}
 
             // resolve agents removed from the table view and remove them from the simulation
             val remainingAgentIds = agentsTableView.items
@@ -260,6 +262,22 @@ class AgentsWindowController:Initializable
             {
                 simulationWindowController.simulation.entityToCellsMap.remove(it)
             }
+
+            // resolve new agents added to the table view and add them to the simulation
+            val newRows = agentsTableView.items.filter {it.agentId !in existingAgents.keys}
+
+            // todo: make this instantiate virtual or actual robot connections...
+            // todo: make connecting to agents asynchronsous because...it won't be an instantaneous thing when connecting to real robots
+            val newAgentControllers = newRows.map()
+            {
+                rowData ->
+                val agentController = VirtualAgentController(rowData.agentId)
+                existingAgents[agentController.agentId] = agentController
+                agentController.connect()
+                agentController
+            }
+            simulationWindowController.simulation.entityToCellsMap
+                .putAll(newAgentControllers.associate {it to emptySet<Simulation.Cell>()})
 
             // resolve updated agents in the table update them in the simulation
             val updatedRows = agentsTableView.items.filter {it.agentId in existingAgents.keys}
@@ -274,8 +292,7 @@ class AgentsWindowController:Initializable
                 agentController.bodyColor = rowData.color
 
                 // setting the position and direction of the robot to the user-specified one if it exists
-                if (rowData.newPosition != null &&
-                    rowData.newDirection != null)
+                if (rowData.shouldJumpToInitialPosition)
                 {
                     agentController.position = rowData.newPosition.let {CanvasRenderer.Position(it.x.toDouble(),it.y.toDouble())}
                     agentController.direction = when (rowData.newDirection)
@@ -288,39 +305,13 @@ class AgentsWindowController:Initializable
                 }
             }
 
-            // resolve new agents added to the table view and add them to the simulation
-            val newRows = agentsTableView.items.filter {it.agentId !in existingAgents.keys}
-
-            // todo: make this instantiate virtual or actual robot connections...
-            // todo: make connecting to agents asynchronsous because...it won't be an instantaneous thing when connecting to real robots
-            val newAgentControllers = newRows.map()
+            // automatically deactivite the "jump to initial position flag"
+            val newListItems = agentsTableView.items
+                .map {it.copy(shouldJumpToInitialPosition = false)}
+            if (newListItems != agentsTableView.items)
             {
-                rowData ->
-                val agentController = VirtualAgentController(rowData.agentId)
-                agentController.connect()
-                agentController.setBeliefState(rowData.problemInstance.initialBeliefState)
-                agentController.setBeliefRevisionStrategy(rowData.problemInstance.beliefRevisionStrategy)
-                agentController.setBehaviourDictionary(behaviouralDictionaryWindowController.behaviouralDictionaryTableView.items.associate {it.variable to it.behavior})
-                agentController.bodyColor = rowData.color
-
-                // setting the position and direction of the robot to the user-specified one if it exists
-                if (rowData.newPosition != null &&
-                    rowData.newDirection != null)
-                {
-                    agentController.position = rowData.newPosition.let {CanvasRenderer.Position(it.x.toDouble(),it.y.toDouble())}
-                    agentController.direction = when (rowData.newDirection)
-                    {
-                        Behaviour.CardinalDirection.NORTH -> 270.0
-                        Behaviour.CardinalDirection.EAST -> 0.0
-                        Behaviour.CardinalDirection.SOUTH -> 90.0
-                        Behaviour.CardinalDirection.WEST -> 180.0
-                    }
-                }
-
-                agentController
+                agentsTableView.items.setAll(newListItems)
             }
-            simulationWindowController.simulation.entityToCellsMap
-                .putAll(newAgentControllers.associate {it to emptySet<Simulation.Cell>()})
         })
     }
 
@@ -527,7 +518,7 @@ class AgentsWindowController:Initializable
                 .let {JSONArray(it)}
                 .map {it as JSONObject}
                 .map {it.toProblemInstance()}
-                .map {AgentsTableView.RowData(it,RevisionFunctionConfigPanel(),emptySet(),Simulation.Cell.getElseMake(0,0),Behaviour.CardinalDirection.EAST,Color.RED,Math.random())}
+                .map {AgentsTableView.RowData(it,RevisionFunctionConfigPanel(),emptySet(),Simulation.Cell.getElseMake(0,0),Behaviour.CardinalDirection.EAST,true,Color.RED,Math.random())}
                 .apply {forEach {it.revisionFunctionConfigPanel.setValuesFrom(it.problemInstance.beliefRevisionStrategy)}}
                 .let {ObservableListWrapper(it)})
         }
