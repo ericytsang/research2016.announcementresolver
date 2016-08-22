@@ -5,7 +5,7 @@ import javafx.scene.canvas.GraphicsContext
 import javafx.scene.paint.Color
 import javafx.scene.transform.Affine
 
-data class Wall(val position1:Simulation.Cell,val position2:Simulation.Cell):Simulation.Entity<CanvasRenderer.Renderee>,CanvasRenderer.Renderee
+data class Wall(val position1:Simulation.Cell,val position2:Simulation.Cell):Simulation.Entity,CanvasRenderer.Renderee
 {
     companion object
     {
@@ -21,7 +21,7 @@ data class Wall(val position1:Simulation.Cell,val position2:Simulation.Cell):Sim
         }
     }
 
-    override fun update(simulation:Simulation<CanvasRenderer.Renderee>) = Unit
+    override fun update(simulation:Simulation) = Unit
 
     override val direction:Double get()
     {

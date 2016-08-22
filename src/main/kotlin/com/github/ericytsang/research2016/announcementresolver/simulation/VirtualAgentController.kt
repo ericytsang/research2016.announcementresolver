@@ -1,8 +1,6 @@
 package com.github.ericytsang.research2016.announcementresolver.simulation
 
 import com.github.ericytsang.lib.oopatterns.StateMachine
-import com.github.ericytsang.lib.oopatterns.get
-import com.github.ericytsang.lib.oopatterns.set
 import com.github.ericytsang.lib.simulation.Simulation
 import com.github.ericytsang.research2016.propositionallogic.*
 import javafx.scene.paint.Color
@@ -16,7 +14,7 @@ class VirtualAgentController(agentId:Double):AgentController(agentId)
     override fun setBeliefRevisionStrategy(beliefRevisionStrategy:BeliefRevisionStrategy) = connectivityStateMachine.get().setBeliefRevisionStrategy(beliefRevisionStrategy)
     override fun reviseBeliefState(sentence:Proposition) = connectivityStateMachine.get().reviseBeliefState(sentence)
     override fun setBehaviourDictionary(behaviourDictionary:List<Pair<Proposition,Behaviour>>) = connectivityStateMachine.get().setBehaviourDictionary(behaviourDictionary)
-    override fun update(simulation:Simulation<CanvasRenderer.Renderee>) = connectivityStateMachine.get().update(simulation)
+    override fun update(simulation:Simulation) = connectivityStateMachine.get().update(simulation)
 
     // todo: use getters and setters instead...and make them invoke stuff on the current state in the state machine
     override var bodyColor:Color = Color.YELLOW
@@ -33,7 +31,7 @@ class VirtualAgentController(agentId:Double):AgentController(agentId)
         fun setBeliefRevisionStrategy(beliefRevisionStrategy:BeliefRevisionStrategy)
         fun reviseBeliefState(sentence:Proposition)
         fun setBehaviourDictionary(behaviourDictionary:List<Pair<Proposition,Behaviour>>)
-        fun update(simulation:Simulation<CanvasRenderer.Renderee>)
+        fun update(simulation:Simulation)
     }
 
     private inner class Disconnected:State
@@ -46,7 +44,7 @@ class VirtualAgentController(agentId:Double):AgentController(agentId)
         override fun setBeliefRevisionStrategy(beliefRevisionStrategy:BeliefRevisionStrategy) = throw IllegalStateException("disconnected")
         override fun reviseBeliefState(sentence:Proposition) = throw IllegalStateException("disconnected")
         override fun setBehaviourDictionary(behaviourDictionary:List<Pair<Proposition,Behaviour>>) = throw IllegalStateException("disconnected")
-        override fun update(simulation:Simulation<CanvasRenderer.Renderee>) = Unit
+        override fun update(simulation:Simulation) = Unit
     }
 
     private inner class Connected:State
@@ -82,7 +80,7 @@ class VirtualAgentController(agentId:Double):AgentController(agentId)
 
         private val aiStateMachine = StateMachine<AiState>(Wander())
 
-        override fun update(simulation:Simulation<CanvasRenderer.Renderee>)
+        override fun update(simulation:Simulation)
         {
             val beliefState = And.make(beliefState) ?: contradiction
             val behaviour = behaviourDictionary.find {beliefState isSubsetOf it.first}?.second

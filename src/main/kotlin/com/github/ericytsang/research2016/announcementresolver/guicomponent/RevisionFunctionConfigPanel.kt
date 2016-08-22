@@ -1,7 +1,7 @@
 package com.github.ericytsang.research2016.announcementresolver.guicomponent
 
 import com.github.ericytsang.lib.collections.ConstrainedList
-import com.github.ericytsang.lib.collections.SimpleConstraint
+import com.github.ericytsang.lib.collections.Constraint
 import com.sun.javafx.collections.ObservableListWrapper
 import javafx.beans.InvalidationListener
 import javafx.event.EventHandler
@@ -164,9 +164,13 @@ class RevisionFunctionConfigPanel():VBox()
                 {
                     ConstrainedList(it).apply()
                     {
-                        constraints += SimpleConstraint.make("each variable may only be mapped once")
+                        constraints += Constraint.new<List<Mapping>>().apply()
                         {
-                            it.newValue.map {it.variableName}.toSet().size == it.newValue.map {it.variableName}.size
+                            description = "each variable may only be mapped once"
+                            isConsistent = Constraint.Predicate.new()
+                            {
+                                it.newValue.map {it.variableName}.toSet().size == it.newValue.map {it.variableName}.size
+                            }
                         }
                     }
                 }.let {ObservableListWrapper(it)}

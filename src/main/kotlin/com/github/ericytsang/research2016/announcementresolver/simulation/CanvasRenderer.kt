@@ -1,8 +1,6 @@
 package com.github.ericytsang.research2016.announcementresolver.simulation
 
-import com.github.ericytsang.lib.oopatterns.SimpleProperty
-import com.github.ericytsang.lib.oopatterns.get
-import com.github.ericytsang.lib.oopatterns.set
+import com.github.ericytsang.lib.oopatterns.SimpleBackedField
 import com.github.ericytsang.lib.simulation.Renderer
 import javafx.application.Platform
 import javafx.scene.canvas.Canvas
@@ -11,7 +9,7 @@ import javafx.scene.transform.Affine
 import javafx.scene.transform.Transform
 import java.util.concurrent.CountDownLatch
 
-class CanvasRenderer constructor(val canvas:Canvas,_cellLength:Double):Renderer<CanvasRenderer.Renderee>
+class CanvasRenderer constructor(val canvas:Canvas,_cellLength:Double):Renderer
 {
     /**
      * last transform applied to the [GraphicsContext] of [canvas] in while
@@ -24,16 +22,18 @@ class CanvasRenderer constructor(val canvas:Canvas,_cellLength:Double):Renderer<
     /**
      * length of a cell used when rendering [Entity] objects.
      */
-    val cellLength = SimpleProperty.new(0.0)
+    val cellLength = object:SimpleBackedField<Double>(0.0)
     {
-        value ->
-        if (value <= 0.0)
+        override fun setter(proposedValue:Double)
         {
-            throw IllegalArgumentException("value ($value) cannot be <= 0")
-        }
-        else
-        {
-            field = value
+            if (proposedValue <= 0.0)
+            {
+                throw IllegalArgumentException("value ($proposedValue) cannot be <= 0")
+            }
+            else
+            {
+                field = proposedValue
+            }
         }
     }
 
@@ -42,7 +42,7 @@ class CanvasRenderer constructor(val canvas:Canvas,_cellLength:Double):Renderer<
         this.cellLength.set(_cellLength)
     }
 
-    override fun render(renderees:Iterable<Renderee>)
+    override fun render(renderees:Iterable<*>)
     {
         val releasedOnRenderFinished = CountDownLatch(1)
         Platform.runLater()
@@ -57,20 +57,24 @@ class CanvasRenderer constructor(val canvas:Canvas,_cellLength:Double):Renderer<
             }
 
             // render every entity
-            renderees.sortedBy {it.renderLayer}.forEach()
-            {
-                context.save()
-
-                // apply entity specific transformations, then render the entity
-                context.transform = context.transform.apply()
+            renderees
+                .filter {it is Renderee}
+                .map {it as Renderee}
+                .sortedBy {it.renderLayer}
+                .forEach()
                 {
-                    appendTranslation(cellLength.get()*it.position.x,cellLength.get()*it.position.y)
-                    appendRotation(it.direction)
-                }
-                it.render(context,viewTransform.clone(),cellLength.get())
+                    context.save()
 
-                context.restore()
-            }
+                    // apply entity specific transformations, then render the entity
+                    context.transform = context.transform.apply()
+                    {
+                        appendTranslation(cellLength.get()*it.position.x,cellLength.get()*it.position.y)
+                        appendRotation(it.direction)
+                    }
+                    it.render(context,viewTransform.clone(),cellLength.get())
+
+                    context.restore()
+                }
 
             // release latch indicating that rendering has finished
             releasedOnRenderFinished.countDown()

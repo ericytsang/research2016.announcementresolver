@@ -44,6 +44,36 @@ import kotlin.concurrent.thread
 
 class AgentsWindowController:Initializable
 {
+    companion object
+    {
+        private const val WINDOW_TITLE = "Announcement Finder"
+
+        fun new():AgentsWindowController
+        {
+            // load the main content pane and add it to a window and show it
+            val loader = FXMLLoader(AgentsWindowController::class.java.classLoader.getResource("agentswindow.fxml"))
+            val root = loader.load<Parent>()
+            return loader.getController<AgentsWindowController>().apply()
+            {
+                stage = Stage()
+                stage.title = WINDOW_TITLE
+                stage.scene = Scene(root)
+
+                // when primaryStage window is closed, close all peripheral windows too.
+                stage.scene.window.onHidden = EventHandler()
+                {
+                    hideAllPeripheralWindows()
+                }
+            }
+        }
+    }
+
+    /**
+     * reference to the parent stage.
+     */
+    lateinit var stage:Stage
+        private set
+
     /**
      * field is initialized by the JavaFx framework.
      */
@@ -117,38 +147,14 @@ class AgentsWindowController:Initializable
      */
     private var announcementFinderThread = thread {}
 
-    private lateinit var behaviouralDictionaryWindowController:BehaviouralDictionaryWindowController
-
     /**
      * window used by user to map variables to robot behaviours.
      */
-    private val behaviouralDictionaryWindow = Stage().apply()
-    {
-        val loader = FXMLLoader(this@AgentsWindowController.javaClass.classLoader.getResource("behavioraldictionarywindow.fxml"))
-        scene = Scene(loader.load<Parent>())
-        title = "Behavioural Dictionary"
-        behaviouralDictionaryWindowController = loader.getController()
-    }
+    private val behaviouralDictionaryWindowController = BehaviouralDictionaryWindowController.new()
 
-    private lateinit var obstacleWindowController:ObstacleWindowController
+    private val obstacleWindowController = ObstacleWindowController.new()
 
-    private val obstacleWindow = Stage().apply()
-    {
-        val loader = FXMLLoader(this@AgentsWindowController.javaClass.classLoader.getResource("obstaclewindow.fxml"))
-        scene = Scene(loader.load())
-        title = "Obstacles"
-        obstacleWindowController = loader.getController()
-    }
-
-    private lateinit var simulationWindowController:SimulatorWindowController
-
-    private val simulationWindow = Stage().apply()
-    {
-        val loader = FXMLLoader(this@AgentsWindowController.javaClass.classLoader.getResource("simulatorwindow.fxml"))
-        scene = Scene(loader.load())
-        title = "Simulation"
-        simulationWindowController = loader.getController()
-    }
+    private val simulationWindowController = SimulatorWindowController.new()
 
     override fun initialize(location:URL?,resources:ResourceBundle?)
     {
@@ -187,11 +193,11 @@ class AgentsWindowController:Initializable
          * itself when [behaviouralDictionaryWindow] is showing; no check mark is displayed
          * otherwise.
          */
-        behaviouralDictionaryWindow.scene.window.onShown = EventHandler()
+        behaviouralDictionaryWindowController.stage.scene.window.onShown = EventHandler()
         {
             toggleDictionaryWindowCheckMenuItem.isSelected = true
         }
-        behaviouralDictionaryWindow.scene.window.onHidden = EventHandler()
+        behaviouralDictionaryWindowController.stage.scene.window.onHidden = EventHandler()
         {
             toggleDictionaryWindowCheckMenuItem.isSelected = false
         }
@@ -201,11 +207,11 @@ class AgentsWindowController:Initializable
          * itself when [obstacleWindow] is showing; no check mark is displayed
          * otherwise.
          */
-        obstacleWindow.scene.window.onShown = EventHandler()
+        obstacleWindowController.stage.scene.window.onShown = EventHandler()
         {
             toggleObstacleWindowCheckMenuItem.isSelected = true
         }
-        obstacleWindow.scene.window.onHidden = EventHandler()
+        obstacleWindowController.stage.scene.window.onHidden = EventHandler()
         {
             toggleObstacleWindowCheckMenuItem.isSelected = false
         }
@@ -215,11 +221,11 @@ class AgentsWindowController:Initializable
          * itself when [simulationWindow] is showing; no check mark is displayed
          * otherwise.
          */
-        simulationWindow.scene.window.onShown = EventHandler()
+        simulationWindowController.stage.scene.window.onShown = EventHandler()
         {
             toggleSimulationWindowCheckMenuItem.isSelected = true
         }
-        simulationWindow.scene.window.onHidden = EventHandler()
+        simulationWindowController.stage.scene.window.onHidden = EventHandler()
         {
             toggleSimulationWindowCheckMenuItem.isSelected = false
         }
@@ -317,9 +323,9 @@ class AgentsWindowController:Initializable
 
     fun hideAllPeripheralWindows()
     {
-        behaviouralDictionaryWindow.hide()
-        obstacleWindow.hide()
-        simulationWindow.hide()
+        behaviouralDictionaryWindowController.stage.hide()
+        obstacleWindowController.stage.hide()
+        simulationWindowController.stage.hide()
     }
 
     /**
@@ -426,13 +432,13 @@ class AgentsWindowController:Initializable
      */
     @FXML private fun toggleDictionaryWindow()
     {
-        if (behaviouralDictionaryWindow.isShowing)
+        if (behaviouralDictionaryWindowController.stage.isShowing)
         {
-            behaviouralDictionaryWindow.hide()
+            behaviouralDictionaryWindowController.stage.hide()
         }
         else
         {
-            behaviouralDictionaryWindow.show()
+            behaviouralDictionaryWindowController.stage.show()
         }
     }
 
@@ -441,13 +447,13 @@ class AgentsWindowController:Initializable
      */
     @FXML private fun toggleObstacleWindow()
     {
-        if (obstacleWindow.isShowing)
+        if (obstacleWindowController.stage.isShowing)
         {
-            obstacleWindow.hide()
+            obstacleWindowController.stage.hide()
         }
         else
         {
-            obstacleWindow.show()
+            obstacleWindowController.stage.show()
         }
     }
 
@@ -457,13 +463,13 @@ class AgentsWindowController:Initializable
      */
     @FXML private fun toggleSimulationWindow()
     {
-        if (simulationWindow.isShowing)
+        if (simulationWindowController.stage.isShowing)
         {
-            simulationWindow.hide()
+            simulationWindowController.stage.hide()
         }
         else
         {
-            simulationWindow.show()
+            simulationWindowController.stage.show()
         }
     }
     /**

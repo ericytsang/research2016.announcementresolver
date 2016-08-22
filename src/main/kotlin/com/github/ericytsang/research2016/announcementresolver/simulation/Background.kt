@@ -9,7 +9,7 @@ import javafx.scene.transform.Transform
 /**
  * Created by surpl on 8/16/2016.
  */
-class Background:Simulation.Entity<CanvasRenderer.Renderee>,CanvasRenderer.Renderee
+class Background:Simulation.Entity,CanvasRenderer.Renderee
 {
     companion object
     {
@@ -19,7 +19,7 @@ class Background:Simulation.Entity<CanvasRenderer.Renderee>,CanvasRenderer.Rende
         val ALPHA_GRID_AXIS:Double = 1.0
     }
 
-    override fun update(simulation:Simulation<CanvasRenderer.Renderee>) = Unit
+    override fun update(simulation:Simulation) = Unit
 
     override val direction = 0.0
     override var position = CanvasRenderer.Position(0.0,0.0)

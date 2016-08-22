@@ -1,11 +1,10 @@
 package com.github.ericytsang.research2016.announcementresolver.guicomponent
 
 import com.github.ericytsang.lib.collections.ConstrainedList
-import com.github.ericytsang.lib.collections.SimpleConstraint
+import com.github.ericytsang.lib.collections.Constraint
 import com.github.ericytsang.lib.javafxutils.EditableTableView
 import com.github.ericytsang.lib.javafxutils.ValidatableTextField
 import com.github.ericytsang.lib.simulation.Simulation
-import com.github.ericytsang.research2016.announcementresolver.simulation.Wall
 import com.github.ericytsang.research2016.beliefrevisor.gui.Dimens
 import com.sun.javafx.collections.ObservableListWrapper
 import javafx.beans.property.SimpleStringProperty
@@ -28,9 +27,13 @@ class ObstacleTableView:EditableTableView<ObstacleTableView.RowData>()
         {
             ConstrainedList(it).apply()
             {
-                constraints += SimpleConstraint.make("all walls must have distinct locations")
+                constraints += Constraint.new<List<RowData>>().apply()
                 {
-                    it.newValue.toSet().size == it.newValue.size
+                    description = "all walls must have distinct locations"
+                    isConsistent = Constraint.Predicate.new()
+                    {
+                        it.newValue.toSet().size == it.newValue.size
+                    }
                 }
             }
         }.let {ObservableListWrapper(it)}

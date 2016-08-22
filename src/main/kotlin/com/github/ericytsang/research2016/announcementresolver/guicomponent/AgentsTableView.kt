@@ -24,15 +24,54 @@ import javafx.scene.layout.VBox
 import javafx.scene.paint.Color
 import javafx.util.Callback
 
+/**
+ * allows the user to view and modify a collection of [AgentsTableView.RowData]
+ * objects.
+ */
 class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
 {
     companion object
     {
         /**
-         * the number attempts the dialog box tried to generate a unique row id
-         * when creating a new row (not editing an existing one)
+         * names of columns in the table view.
          */
-        const val NUM_ATTEMPTS_TO_GENERATE_NEW_ROW_ID = 100
+        private const val COLUMN_NAME_CURRENT_K:String = "Current belief state"
+        private const val COLUMN_NAME_TARGET_K:String = "Target belief state"
+        private const val COLUMN_NAME_BELIEF_REVISION_OPERATOR:String = "Belief revision operator"
+        private const val COLUMN_NAME_REVISED_K:String = "Revised belief state"
+
+        /**
+         * text used in the input dialog box shown when creating a new list item
+         * or editing an existing one.
+         */
+        private const val DIALOG_TITLE_ADD:String = "Add New Agent"
+        private const val DIALOG_TITLE_EDIT:String = "Edit Existing Agent"
+        private const val DIALOG_LABEL_CURRENT_K:String = "Current belief state:"
+        private const val DIALOG_LABEL_TARGET_K:String = "Target belief state:"
+        private const val DIALOG_LABEL_COLOR:String = "Agent color:"
+        private const val DIALOG_LABEL_SHOULD_JUMP:String = "Jump to specified position:"
+        private const val DIALOG_LABEL_JUMP_X:String = "X Position:"
+        private const val DIALOG_LABEL_JUMP_Y:String = "Y Position:"
+        private const val DIALOG_LABEL_JUMP_DIRECTION:String = "Direction:"
+        private const val DIALOG_LABEL_BELIEF_REVISION_OPERATOR:String = "Belief revision operator:"
+
+        /**
+         * initial dimensions of the input dialog box.
+         */
+        private const val DIALOG_WIDTH:Double = 400.0
+        private const val DIALOG_HEIGHT:Double = 700.0
+
+        /**
+         * the options available in the input dialog for setting the color of
+         * the agent.
+         */
+        private val AGENT_COLOR_OPTIONS:List<NamedValue<Color>> = listOf(
+            NamedValue("Red",Color.RED),
+            NamedValue("Green",Color.GREEN),
+            NamedValue("Blue",Color.BLUE),
+            NamedValue("Yellow",Color.YELLOW),
+            NamedValue("Cyan",Color.CYAN),
+            NamedValue("Magenta",Color.MAGENTA))
     }
 
     init
@@ -40,7 +79,7 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
         // add columns to the table view
         columns += TableColumn<RowData,String>().apply()
         {
-            text = "Initial belief state"
+            text = COLUMN_NAME_CURRENT_K
             cellValueFactory = Callback()
             {
                 it.value.problemInstance.initialBeliefState
@@ -51,7 +90,7 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
         }
         columns += TableColumn<RowData,String>().apply()
         {
-            text = "Target belief state"
+            text = COLUMN_NAME_TARGET_K
             cellValueFactory = Callback()
             {
                 it.value.problemInstance.targetBeliefState
@@ -62,7 +101,7 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
         }
         columns += TableColumn<RowData,String>().apply()
         {
-            text = "Belief revision operator"
+            text = COLUMN_NAME_BELIEF_REVISION_OPERATOR
             cellValueFactory = Callback()
             {
                 it.value.revisionFunctionConfigPanel.revisionOperatorComboBox.value.name
@@ -71,7 +110,7 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
         }
         columns += TableColumn<RowData,String>().apply()
         {
-            text = "Revised belief state"
+            text = COLUMN_NAME_REVISED_K
             cellValueFactory = Callback()
             {
                 it.value.actualK
@@ -110,20 +149,20 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
                 val robotColor = inputDialog.colorComboBox.value.value
                 val shouldJumpToPosition = inputDialog.jumpToInitialPositionCheckBox.isSelected
 
-                // try to use the row id from the previous input...if it doesn't exist, try to generate a new one that hopefully will not collide with another row...
+                // try to use the row id from the previous input...if it doesn't
+                // exist, try to generate a new one that hopefully will not
+                // collide with another row...
                 val robotId = previousInput?.agentId ?: run()
                 {
-                    var remainingAttempts = NUM_ATTEMPTS_TO_GENERATE_NEW_ROW_ID
-                    while (remainingAttempts > 0)
+                    val potentialId = Math.random()
+                    if (items.all {it.agentId != potentialId})
                     {
-                        val potentialId = Math.random()
-                        if (items.all {it.agentId != potentialId})
-                        {
-                            return@run potentialId
-                        }
-                        --remainingAttempts
+                        return@run potentialId
                     }
-                    throw IllegalArgumentException("failed to generate unique ID for row after $NUM_ATTEMPTS_TO_GENERATE_NEW_ROW_ID attempts")
+                    else
+                    {
+                        throw IllegalArgumentException("failed to generate unique ID for agent. please try again.")
+                    }
                 }
 
                 // done parsing...construct and return the row data object
@@ -158,17 +197,6 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
         }
 
     /**
-     * returns a set of all unique [Variable] instances in [items].
-     */
-    private val allVariables:Set<Variable> get()
-    {
-        val propositions = mutableSetOf<Proposition>()
-        propositions += items.flatMap {it.problemInstance.initialBeliefState}
-        propositions += items.map {it.problemInstance.targetBeliefState}
-        return propositions.flatMap {it.variables}.toSet()
-    }
-
-    /**
      * each [RowData] instance can be represented as a row in [AgentsTableView].
      */
     data class RowData(
@@ -182,10 +210,21 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
         val agentId:Double)
 
     /**
+     * returns a set of all unique [Variable] instances in [items].
+     */
+    private val allVariables:Set<Variable> get()
+    {
+        val propositions = mutableSetOf<Proposition>()
+        propositions += items.flatMap {it.problemInstance.initialBeliefState}
+        propositions += items.map {it.problemInstance.targetBeliefState}
+        return propositions.flatMap {it.variables}.toSet()
+    }
+
+    /**
      * dialog shown when inserting new entries into the [AgentsTableView] or
      * editing existing entries.
      */
-    inner private class InputDialog(val model:RowData?):Alert(AlertType.NONE)
+    private inner class InputDialog(val model:RowData?):Alert(AlertType.NONE)
     {
         val initialKTextField = TextField().apply()
         {
@@ -199,31 +238,26 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
 
         val colorComboBox = ComboBox<NamedValue<Color>>().apply()
         {
-            items.add(NamedValue("Red",Color.RED))
-            items.add(NamedValue("Green",Color.GREEN))
-            items.add(NamedValue("Blue",Color.BLUE))
-            items.add(NamedValue("Yellow",Color.YELLOW))
-            items.add(NamedValue("Cyan",Color.CYAN))
-            items.add(NamedValue("Magenta",Color.MAGENTA))
+            items.addAll(AGENT_COLOR_OPTIONS)
             value = items.find {it.value == model?.color} ?: items.first()
         }
 
         val initialXPositionTextField = ValidatableTextField.makeIntegerTextField().apply()
         {
-            text = model?.newPosition?.x?.toString() ?: "0"
+            text = model?.newPosition?.x?.toString() ?: 0.toString()
         }
 
         val initialYPositionTextField = ValidatableTextField.makeIntegerTextField().apply()
         {
-            text = model?.newPosition?.y?.toString() ?: "0"
+            text = model?.newPosition?.y?.toString() ?: 0.toString()
         }
 
         val directionComboBox = ComboBox<NamedValue<Behaviour.CardinalDirection>>().apply()
         {
-            items.add(NamedValue("North",Behaviour.CardinalDirection.NORTH))
-            items.add(NamedValue("East",Behaviour.CardinalDirection.EAST))
-            items.add(NamedValue("South",Behaviour.CardinalDirection.SOUTH))
-            items.add(NamedValue("West",Behaviour.CardinalDirection.WEST))
+            Behaviour.CardinalDirection.values().forEach()
+            {
+                items.add(NamedValue(it.friendly,it))
+            }
             value = items.find {it.value == model?.newDirection} ?: items.first()
         }
 
@@ -245,31 +279,33 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
 
         init
         {
-            dialogPane.minWidth = 400.0
-            dialogPane.minHeight = 600.0
+            dialogPane.minWidth = DIALOG_WIDTH
+            dialogPane.minHeight = DIALOG_HEIGHT
             isResizable = true
+
+            title = if (model == null) DIALOG_TITLE_ADD else DIALOG_TITLE_EDIT
             headerText = " "
-            buttonTypes.addAll(ButtonType.CANCEL,ButtonType.OK)
             dialogPane.content = VBox().apply()
             {
                 spacing = Dimens.KEYLINE_SMALL.toDouble()
-                children += Label("Initial belief state:")
+                children += Label(DIALOG_LABEL_CURRENT_K)
                 children += initialKTextField
-                children += Label("Target belief state:")
+                children += Label(DIALOG_LABEL_TARGET_K)
                 children += targetKTextField
-                children += Label("Agent color:")
+                children += Label(DIALOG_LABEL_COLOR)
                 children += colorComboBox
-                children += Label("Jump to specified position:")
+                children += Label(DIALOG_LABEL_SHOULD_JUMP)
                 children += jumpToInitialPositionCheckBox
-                children += Label("X Position:")
+                children += Label(DIALOG_LABEL_JUMP_X)
                 children += initialXPositionTextField
-                children += Label("Y Position:")
+                children += Label(DIALOG_LABEL_JUMP_Y)
                 children += initialYPositionTextField
-                children += Label("Direction:")
+                children += Label(DIALOG_LABEL_JUMP_DIRECTION)
                 children += directionComboBox
-                children += Label("Belief revision operator:")
+                children += Label(DIALOG_LABEL_BELIEF_REVISION_OPERATOR)
                 children += operatorInputPane
             }
+            buttonTypes.addAll(ButtonType.CANCEL,ButtonType.OK)
         }
     }
 }

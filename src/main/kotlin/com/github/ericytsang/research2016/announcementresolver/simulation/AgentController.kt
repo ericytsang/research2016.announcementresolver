@@ -8,7 +8,7 @@ import javafx.scene.canvas.GraphicsContext
 import javafx.scene.paint.Color
 import javafx.scene.transform.Affine
 
-abstract class AgentController(val agentId:Double):Simulation.Entity<CanvasRenderer.Renderee>,CanvasRenderer.Renderee
+abstract class AgentController(val agentId:Double):Simulation.Entity,CanvasRenderer.Renderee
 {
     /**
      * try to connect this controller to the remote agent. this could be trying

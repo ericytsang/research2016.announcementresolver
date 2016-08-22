@@ -1,14 +1,13 @@
 package com.github.ericytsang.research2016.announcementresolver.guicomponent
 
 import com.github.ericytsang.lib.collections.ConstrainedList
-import com.github.ericytsang.lib.collections.SimpleConstraint
-import com.github.ericytsang.lib.javafxutils.ComplexComboBox
+import com.github.ericytsang.lib.collections.Constraint
+import com.github.ericytsang.lib.javafxutils.PolymorphicComboBox
 import com.github.ericytsang.lib.javafxutils.EditableTableView
 import com.github.ericytsang.lib.javafxutils.ValidatableTextField
 import com.github.ericytsang.research2016.announcementresolver.simulation.Behaviour
 import com.github.ericytsang.research2016.beliefrevisor.gui.Dimens
 import com.github.ericytsang.research2016.propositionallogic.Proposition
-import com.github.ericytsang.research2016.propositionallogic.Variable
 import com.github.ericytsang.research2016.propositionallogic.makeFrom
 import com.github.ericytsang.research2016.propositionallogic.toParsableString
 import com.sun.javafx.collections.ObservableListWrapper
@@ -36,9 +35,13 @@ class BehavioralDictionaryTableView:EditableTableView<BehavioralDictionaryTableV
         {
             ConstrainedList(it).apply()
             {
-                constraints += SimpleConstraint.make("variables must be unique")
+                constraints += Constraint.new<List<RowData>>().apply()
                 {
-                    it.newValue.map {it.proposition}.toSet().size == it.newValue.size
+                    isConsistent = Constraint.Predicate.new()
+                    {
+                        it.newValue.map {it.proposition}.toSet().size == it.newValue.size
+                    }
+                    description = "variables must be unique"
                 }
             }
         }
@@ -76,7 +79,7 @@ class BehavioralDictionaryTableView:EditableTableView<BehavioralDictionaryTableV
                 // todo: better error messages
                 return RowData(
                     Proposition.makeFrom(inputDialog.variableTextField.text),
-                    inputDialog.behaviorComboBox.comboBox.value.build())
+                    inputDialog.behaviorComboBox.product!!)
             }
             catch (ex:Exception)
             {
@@ -106,29 +109,14 @@ class BehavioralDictionaryTableView:EditableTableView<BehavioralDictionaryTableV
             text = model?.proposition?.toParsableString() ?: ""
         }
 
-        val behaviorComboBox = ComplexComboBox<ComplexComboBox.OptionalBuilder<Behaviour>,Behaviour>().apply()
+        val behaviorComboBox = PolymorphicComboBox<PolymorphicComboBox.Option<Behaviour>,Behaviour>().apply()
         {
             // configure control...
             spacing = Dimens.KEYLINE_SMALL.toDouble()
-            val wanderBehaviorOption = WanderBehaviorOption()
-            val guardBehaviorOption = GuardBehaviorOption()
-            comboBox.items.addAll(wanderBehaviorOption,guardBehaviorOption)
+            comboBox.items.addAll(WanderBehaviorOption(),GuardBehaviorOption())
 
             // set control value to reflect model data
-            val behaviour = model?.behavior
-            when (behaviour)
-            {
-                null -> {}
-                is Behaviour.Wander ->
-                {
-                    comboBox.value = wanderBehaviorOption
-                }
-                is Behaviour.Guard ->
-                {
-                    comboBox.value = guardBehaviorOption
-                }
-            }
-            comboBox.value?.configureBuilderFrom(behaviour!!)
+            product = model?.behavior
         }
 
         init
@@ -148,15 +136,18 @@ class BehavioralDictionaryTableView:EditableTableView<BehavioralDictionaryTableV
             }
         }
 
-        private class WanderBehaviorOption():ComplexComboBox.OptionalBuilder<Behaviour>
+        private class WanderBehaviorOption():PolymorphicComboBox.Option<Behaviour>
         {
             override val panel:Node? = null
             override fun build() = Behaviour.Wander()
-            override fun configureBuilderFrom(product:Behaviour) = Unit
+            override fun parse(product:Behaviour)
+            {
+                product as Behaviour.Wander
+            }
             override fun toString():String = "Wander"
         }
 
-        private class GuardBehaviorOption():ComplexComboBox.OptionalBuilder<Behaviour>
+        private class GuardBehaviorOption():PolymorphicComboBox.Option<Behaviour>
         {
             val xPositionTextField = ValidatableTextField.makeIntegerTextField()
             val yPositionTextField = ValidatableTextField.makeIntegerTextField()
@@ -204,7 +195,7 @@ class BehavioralDictionaryTableView:EditableTableView<BehavioralDictionaryTableV
                 return Behaviour.Guard(xPosition,yPosition,direction)
             }
 
-            override fun configureBuilderFrom(product:Behaviour)
+            override fun parse(product:Behaviour)
             {
                 product as Behaviour.Guard
                 xPositionTextField.text = product.x.toString()

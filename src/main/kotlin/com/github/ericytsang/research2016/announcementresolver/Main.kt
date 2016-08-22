@@ -40,18 +40,7 @@ object GuiLauncher
     {
         override fun start(primaryStage:Stage)
         {
-            // load the main content pain and add it to a window and show it
-            val loader = FXMLLoader(javaClass.classLoader.getResource("agentswindow.fxml"))
-            primaryStage.title = "Announcement Finder"
-            primaryStage.scene = Scene(loader.load<Parent>())
-            primaryStage.show()
-
-            // when primaryStage window is closed, close all peripheral windows too.
-            val controller = loader.getController<AgentsWindowController>()
-            primaryStage.scene.window.onHidden = EventHandler()
-            {
-                controller.hideAllPeripheralWindows()
-            }
+            AgentsWindowController.new().stage.show()
         }
     }
 }
