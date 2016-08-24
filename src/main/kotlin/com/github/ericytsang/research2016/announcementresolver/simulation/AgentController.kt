@@ -4,6 +4,7 @@ import com.github.ericytsang.lib.simulation.Simulation
 import com.github.ericytsang.research2016.propositionallogic.BeliefRevisionStrategy
 import com.github.ericytsang.research2016.propositionallogic.Proposition
 import com.github.ericytsang.research2016.propositionallogic.Variable
+import javafx.geometry.Point2D
 import javafx.scene.canvas.GraphicsContext
 import javafx.scene.paint.Color
 import javafx.scene.transform.Affine
@@ -32,16 +33,23 @@ abstract class AgentController(val agentId:Double):Simulation.Entity,CanvasRende
     abstract fun setBeliefRevisionStrategy(beliefRevisionStrategy:BeliefRevisionStrategy)
 
     /**
-     * sends the sentence to the remote agent to revise its belief state by it
-     * changing its behaviour.
-     */
-    abstract fun reviseBeliefState(sentence:Proposition)
-
-    /**
      * sends the behaviour dictionary to the remote agent so it knows how to
      * behave based on its belief state.
      */
     abstract fun setBehaviourDictionary(behaviourDictionary:List<Pair<Proposition,Behaviour>>)
+
+    /**
+     * sends information about the location of obstacles to the remote agent so
+     * it knows where they are so it can do better path finding.
+     */
+    // todo: call this function!
+    abstract fun setObstacles(obstacles:Set<Simulation.Cell>)
+
+    /**
+     * sends the sentence to the remote agent to revise its belief state by it
+     * changing its behaviour.
+     */
+    abstract fun reviseBeliefState(sentence:Proposition)
 
     /**
      * color used to represent this agent in the [CanvasRenderer].
@@ -50,7 +58,7 @@ abstract class AgentController(val agentId:Double):Simulation.Entity,CanvasRende
 
     abstract override var direction:Double
 
-    abstract override var position:CanvasRenderer.Position
+    abstract override var position:Point2D
 
     final override val renderLayer:Int = RenderLayer.AGENT.value
 

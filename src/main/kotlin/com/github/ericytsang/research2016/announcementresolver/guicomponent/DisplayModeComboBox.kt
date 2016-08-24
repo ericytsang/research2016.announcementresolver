@@ -48,6 +48,7 @@ class DisplayModeComboBox:ComboBox<DisplayModeComboBox.Option>()
      * [name] is displayed directly in the [displayModeComboBox] control.
      * [transform] is unused within this class.
      */
+    // todo: replace with named value object
     class Option(val name:String,val transform:(List<Proposition>,Set<Variable>)->List<String>)
     {
         override fun toString():String = name

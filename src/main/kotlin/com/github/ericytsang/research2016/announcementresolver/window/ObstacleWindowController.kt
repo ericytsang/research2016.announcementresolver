@@ -10,6 +10,8 @@ import javafx.stage.Stage
 /**
  * Created by surpl on 8/14/2016.
  */
+// todo: save and load
+// todo: add help message
 class ObstacleWindowController
 {
     companion object

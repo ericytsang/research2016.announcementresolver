@@ -1,7 +1,5 @@
 package com.github.ericytsang.research2016.announcementresolver.guicomponent
 
-import com.github.ericytsang.lib.collections.ConstrainedList
-import com.github.ericytsang.lib.collections.Constraint
 import com.github.ericytsang.lib.javafxutils.PolymorphicComboBox
 import com.github.ericytsang.lib.javafxutils.EditableTableView
 import com.github.ericytsang.lib.javafxutils.ValidatableTextField
@@ -10,7 +8,6 @@ import com.github.ericytsang.research2016.beliefrevisor.gui.Dimens
 import com.github.ericytsang.research2016.propositionallogic.Proposition
 import com.github.ericytsang.research2016.propositionallogic.makeFrom
 import com.github.ericytsang.research2016.propositionallogic.toParsableString
-import com.sun.javafx.collections.ObservableListWrapper
 import javafx.beans.property.SimpleStringProperty
 import javafx.beans.value.ObservableValue
 import javafx.scene.Node
@@ -22,35 +19,27 @@ import javafx.scene.control.TableColumn
 import javafx.scene.control.TextField
 import javafx.scene.layout.VBox
 import javafx.util.Callback
-import java.util.ArrayList
 
 /**
  * Created by surpl on 8/13/2016.
  */
 class BehavioralDictionaryTableView:EditableTableView<BehavioralDictionaryTableView.RowData>()
 {
+    companion object
+    {
+        /**
+         * names of columns in the table view.
+         */
+        private const val COLUMN_NAME_PROPOSITIONS:String = "Proposition"
+        private const val COLUMN_NAME_BEHAVIOURS:String = "Behaviour"
+    }
+
     init
     {
-        items = ArrayList<RowData>().let()
-        {
-            ConstrainedList(it).apply()
-            {
-                constraints += Constraint.new<List<RowData>>().apply()
-                {
-                    isConsistent = Constraint.Predicate.new()
-                    {
-                        it.newValue.map {it.proposition}.toSet().size == it.newValue.size
-                    }
-                    description = "variables must be unique"
-                }
-            }
-        }
-        .let {ObservableListWrapper(it)}
-
         // add columns to the table view
         columns.add(TableColumn<RowData,String>().apply()
         {
-            text = "Proposition"
+            text = COLUMN_NAME_PROPOSITIONS
             cellValueFactory = Callback<TableColumn.CellDataFeatures<RowData,String>,ObservableValue<String>>()
             {
                 SimpleStringProperty(it.value.proposition.toString())
@@ -58,7 +47,7 @@ class BehavioralDictionaryTableView:EditableTableView<BehavioralDictionaryTableV
         })
         columns.add(TableColumn<RowData,String>().apply()
         {
-            text = "Behaviour"
+            text = COLUMN_NAME_BEHAVIOURS
             cellValueFactory = Callback<TableColumn.CellDataFeatures<RowData,String>,ObservableValue<String>>()
             {
                 SimpleStringProperty(it.value.behavior.toString())

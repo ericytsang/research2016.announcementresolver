@@ -1,50 +1,83 @@
 package com.github.ericytsang.research2016.announcementresolver.simulation
 
 import com.github.ericytsang.lib.simulation.Simulation
+import javafx.geometry.Point2D
 import javafx.scene.canvas.GraphicsContext
 import javafx.scene.paint.Color
 import javafx.scene.transform.Affine
+import java.util.LinkedHashSet
 
-data class Wall(val position1:Simulation.Cell,val position2:Simulation.Cell):Simulation.Entity,CanvasRenderer.Renderee
+data class Wall(val position1:Simulation.Cell,val position2:Simulation.Cell):Simulation.Entity,CanvasRenderer.Renderee,Obstacle
 {
     companion object
     {
-        val COLOR_WALL:Color = Color.BEIGE
+        val WALL_FILL:Color = Color.BEIGE
+        val WALL_FILL_ALPHA:Double = 0.5
+        val WALL_STROKE:Color = Color.BEIGE
+        val WALL_STROKE_WIDTH:Double = 3.0
+        val WALL_STROKE_ALPHA:Double = 1.0
     }
 
-    init
+    /**
+     * set of all the cells that this wall occupies.
+     */
+    private val occupiedCells:Set<Simulation.Cell> = run()
     {
-        // make sure position1 and position1 are adjacent points.
-        if (!(position1 isAdjacentTo position2))
+        /*
+        we figure out which cells are in the set by:
+
+        1. first positioning our cursor at position1
+        2. add the cell at the cursor to the set
+        3. move the cursor closer to position 2
+        4. repeat from step 2 until the cursor reaches position 2
+         */
+
+        val start = Point2D(position1.x.toDouble(),position1.y.toDouble())
+        val end = Point2D(position2.x.toDouble(),position2.y.toDouble())
+        val offset = Point2D(0.0,0.0)
+        val numIterations:Int = Math.ceil(start.distance(end)).toInt()
+        val step = Point2D((end.x-start.x)/numIterations,(end.y-start.y)/numIterations)
+        val result = LinkedHashSet<Simulation.Cell>()
+
+        var cursor = start
+        repeat(numIterations+1)
         {
-            throw IllegalArgumentException("$position1 and $position2 must be adjacent points.")
+            val cellAtCursor = Simulation.Cell.getElseMake(
+                Math.round(cursor.x+offset.x).toInt(),
+                Math.round(cursor.y+offset.y).toInt())
+            result.add(cellAtCursor)
+            cursor = cursor.add(step)
         }
+
+        result
     }
 
-    override fun update(simulation:Simulation) = Unit
-
-    override val direction:Double get()
+    override fun update(simulation:Simulation)
     {
-        return if (position1.x == position2.x)
-        {
-            0.0
-        }
-        else
-        {
-            90.0
-        }
+        simulation.entityToCellsMap[this] = occupiedCells
     }
 
-    override val position = CanvasRenderer.Position(
-        ((position1.x.toDouble()+position2.x.toDouble())/2)+0.5,
-        ((position1.y.toDouble()+position2.y.toDouble())/2)+0.5)
+    override val direction:Double = 0.0
+
+    override val position = Point2D(0.0,0.0)
 
     override val renderLayer = RenderLayer.WALL.value
 
     override fun render(graphicsContext:GraphicsContext,viewTransform:Affine,cellLength:Double)
     {
-        graphicsContext.fill = COLOR_WALL
-        graphicsContext.fillRect(cellLength*-0.5,-1.5,cellLength,3.0)
+        graphicsContext.fill = WALL_FILL
+        graphicsContext.globalAlpha = WALL_FILL_ALPHA
+        for (cell in occupiedCells)
+        {
+            graphicsContext.fillRect((cell.x-0.5)*cellLength,(cell.y-0.5)*cellLength,cellLength,cellLength)
+        }
+
+        graphicsContext.stroke = WALL_STROKE
+        graphicsContext.lineWidth = WALL_STROKE_WIDTH
+        graphicsContext.globalAlpha = WALL_STROKE_ALPHA
+        graphicsContext.strokeLine(
+            position1.x.toDouble()*cellLength,position1.y.toDouble()*cellLength,
+            position2.x.toDouble()*cellLength,position2.y.toDouble()*cellLength)
     }
 
     override fun hashCode():Int

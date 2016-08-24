@@ -7,6 +7,7 @@ import com.github.ericytsang.research2016.announcementresolver.guicomponent.Revi
 import com.github.ericytsang.research2016.announcementresolver.simulation.AgentController
 import com.github.ericytsang.research2016.announcementresolver.simulation.Behaviour
 import com.github.ericytsang.research2016.announcementresolver.simulation.CanvasRenderer
+import com.github.ericytsang.research2016.announcementresolver.simulation.Obstacle
 import com.github.ericytsang.research2016.announcementresolver.simulation.VirtualAgentController
 import com.github.ericytsang.research2016.announcementresolver.simulation.Wall
 import com.github.ericytsang.research2016.announcementresolver.toJSONObject
@@ -23,6 +24,7 @@ import javafx.event.EventHandler
 import javafx.fxml.FXML
 import javafx.fxml.FXMLLoader
 import javafx.fxml.Initializable
+import javafx.geometry.Point2D
 import javafx.scene.Parent
 import javafx.scene.Scene
 import javafx.scene.control.Button
@@ -42,6 +44,7 @@ import java.util.ResourceBundle
 import java.util.concurrent.CountDownLatch
 import kotlin.concurrent.thread
 
+// todo: add help message
 class AgentsWindowController:Initializable
 {
     companion object
@@ -179,10 +182,20 @@ class AgentsWindowController:Initializable
         }
 
         /*
-         * when the behaviouralDictionaryWindow's tableview items are changed,
+         * when the behaviouralDictionaryWindowController's tableview items are changed,
          * update the dictionaries in the agents as well
          */
         behaviouralDictionaryWindowController.behaviouralDictionaryTableView.items.addListener(InvalidationListener()
+        {
+            val oldItems = agentsTableView.items.toList()
+            agentsTableView.items.setAll(oldItems)
+        })
+
+        /*
+         * when the obstacleWindowController's tableview items are changed,
+         * update the obstacles in the agents as well
+         */
+        obstacleWindowController.obstacleTableView.items.addListener(InvalidationListener()
         {
             val oldItems = agentsTableView.items.toList()
             agentsTableView.items.setAll(oldItems)
@@ -295,19 +308,14 @@ class AgentsWindowController:Initializable
                 agentController.setBeliefState(rowData.problemInstance.initialBeliefState)
                 agentController.setBeliefRevisionStrategy(rowData.problemInstance.beliefRevisionStrategy)
                 agentController.setBehaviourDictionary(behaviouralDictionaryWindowController.behaviouralDictionaryTableView.items.map {it.proposition to it.behavior})
+                agentController.setObstacles(simulationWindowController.simulation.entityToCellsMap.filter {it.key is Obstacle}.flatMap {it.value}.toSet())
                 agentController.bodyColor = rowData.color
 
                 // setting the position and direction of the robot to the user-specified one if it exists
                 if (rowData.shouldJumpToInitialPosition)
                 {
-                    agentController.position = rowData.newPosition.let {CanvasRenderer.Position(it.x.toDouble(),it.y.toDouble())}
-                    agentController.direction = when (rowData.newDirection)
-                    {
-                        Behaviour.CardinalDirection.NORTH -> 270.0
-                        Behaviour.CardinalDirection.EAST -> 0.0
-                        Behaviour.CardinalDirection.SOUTH -> 90.0
-                        Behaviour.CardinalDirection.WEST -> 180.0
-                    }
+                    agentController.position = rowData.newPosition.let {Point2D(it.x.toDouble(),it.y.toDouble())}
+                    agentController.direction = rowData.newDirection.angle
                 }
             }
 

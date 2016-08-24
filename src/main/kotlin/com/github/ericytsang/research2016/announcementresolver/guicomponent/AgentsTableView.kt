@@ -1,9 +1,9 @@
 package com.github.ericytsang.research2016.announcementresolver.guicomponent
 
 import com.github.ericytsang.lib.javafxutils.EditableTableView
+import com.github.ericytsang.lib.javafxutils.NamedValue
 import com.github.ericytsang.lib.javafxutils.ValidatableTextField
 import com.github.ericytsang.lib.simulation.Simulation
-import com.github.ericytsang.research2016.announcementresolver.NamedValue
 import com.github.ericytsang.research2016.announcementresolver.simulation.Behaviour
 import com.github.ericytsang.research2016.beliefrevisor.gui.Dimens
 import com.github.ericytsang.research2016.propositionallogic.AnnouncementResolutionStrategy
@@ -28,6 +28,7 @@ import javafx.util.Callback
  * allows the user to view and modify a collection of [AgentsTableView.RowData]
  * objects.
  */
+// todo: display connectivity status to agent
 class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
 {
     companion object

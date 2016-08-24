@@ -16,6 +16,7 @@ import javafx.stage.Stage
 import java.net.URL
 import java.util.ResourceBundle
 
+// todo: add help message
 class SimulatorWindowController:Initializable
 {
     companion object

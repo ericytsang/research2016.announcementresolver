@@ -3,6 +3,7 @@ package com.github.ericytsang.research2016.announcementresolver.simulation
 import com.github.ericytsang.lib.oopatterns.SimpleBackedField
 import com.github.ericytsang.lib.simulation.Renderer
 import javafx.application.Platform
+import javafx.geometry.Point2D
 import javafx.scene.canvas.Canvas
 import javafx.scene.canvas.GraphicsContext
 import javafx.scene.transform.Affine
@@ -24,7 +25,7 @@ class CanvasRenderer constructor(val canvas:Canvas,_cellLength:Double):Renderer
      */
     val cellLength = object:SimpleBackedField<Double>(0.0)
     {
-        override fun setter(proposedValue:Double)
+        override fun FieldAccess<Double>.setter(proposedValue:Double)
         {
             if (proposedValue <= 0.0)
             {
@@ -39,7 +40,7 @@ class CanvasRenderer constructor(val canvas:Canvas,_cellLength:Double):Renderer
 
     init
     {
-        this.cellLength.set(_cellLength)
+        this.cellLength.value = _cellLength
     }
 
     override fun render(renderees:Iterable<*>)
@@ -68,10 +69,10 @@ class CanvasRenderer constructor(val canvas:Canvas,_cellLength:Double):Renderer
                     // apply entity specific transformations, then render the entity
                     context.transform = context.transform.apply()
                     {
-                        appendTranslation(cellLength.get()*it.position.x,cellLength.get()*it.position.y)
+                        appendTranslation(cellLength.value*it.position.x,cellLength.value*it.position.y)
                         appendRotation(it.direction)
                     }
-                    it.render(context,viewTransform.clone(),cellLength.get())
+                    it.render(context,viewTransform.clone(),cellLength.value)
 
                     context.restore()
                 }
@@ -85,14 +86,8 @@ class CanvasRenderer constructor(val canvas:Canvas,_cellLength:Double):Renderer
     interface Renderee
     {
         val direction:Double
-        val position:Position
+        val position:Point2D
         val renderLayer:Int
         fun render(graphicsContext:GraphicsContext,viewTransform:Affine,cellLength:Double)
     }
-
-    /**
-     * where the center of the entity is. The boundary between cells lies on
-     * integers.
-     */
-    data class Position(val x:Double,val y:Double)
 }

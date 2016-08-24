@@ -1,6 +1,7 @@
 package com.github.ericytsang.research2016.announcementresolver.simulation
 
 import com.github.ericytsang.lib.simulation.Simulation
+import javafx.geometry.Point2D
 import javafx.scene.canvas.GraphicsContext
 import javafx.scene.paint.Color
 import javafx.scene.transform.Affine
@@ -22,7 +23,7 @@ class Background:Simulation.Entity,CanvasRenderer.Renderee
     override fun update(simulation:Simulation) = Unit
 
     override val direction = 0.0
-    override var position = CanvasRenderer.Position(0.0,0.0)
+    override var position = Point2D(0.0,0.0)
     override val renderLayer = RenderLayer.GROUND.value
     override fun render(graphicsContext:GraphicsContext,viewTransform:Affine,cellLength:Double)
     {

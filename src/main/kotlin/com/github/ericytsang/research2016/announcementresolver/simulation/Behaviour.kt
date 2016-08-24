@@ -15,8 +15,8 @@ sealed class Behaviour
         }
     }
 
-    enum class CardinalDirection(val friendly:String)
+    enum class CardinalDirection(val friendly:String,val angle:Double)
     {
-        NORTH("North"), EAST("East"), SOUTH("South"), WEST("West")
+        NORTH("North",270.0), EAST("East",0.0), SOUTH("South",90.0), WEST("West",180.0)
     }
 }
