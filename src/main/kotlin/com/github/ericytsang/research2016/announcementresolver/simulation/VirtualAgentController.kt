@@ -1,6 +1,9 @@
 package com.github.ericytsang.research2016.announcementresolver.simulation
 
 import com.github.ericytsang.lib.algorithm.AStar
+import com.github.ericytsang.lib.algorithm.angle
+import com.github.ericytsang.lib.algorithm.angleDifference
+import com.github.ericytsang.lib.collections.getRandom
 import com.github.ericytsang.lib.concurrent.future
 import com.github.ericytsang.lib.oopatterns.StateMachine
 import com.github.ericytsang.lib.simulation.Simulation
@@ -9,7 +12,6 @@ import javafx.geometry.Point2D
 import javafx.scene.paint.Color
 import kotlin.concurrent.withLock
 
-// todo: add pathfinding
 class VirtualAgentController(agentId:Double):AgentController(agentId)
 {
     override fun connect() = connectivityStateMachine.value.connect()
@@ -76,7 +78,7 @@ class VirtualAgentController(agentId:Double):AgentController(agentId)
     private inner class Connected:State
     {
         private val MOVE_MAX_SPEED:Double = 0.075
-        private val MOVE_THRESHOLD:Double = 0.01
+        private val MOVE_THRESHOLD:Double = 0.1
 
         private val TURN_MAX_SPEED:Double = 5.0
         private val TURN_THRESHOLD:Double = 0.01
@@ -106,7 +108,7 @@ class VirtualAgentController(agentId:Double):AgentController(agentId)
                 refreshBehaviour()
             }
 
-        private val aiStateMachine = StateMachine<AiState>(Wander())
+        private val aiStateMachine = StateMachine<AiState>(DoNothing())
 
         override fun onEnter() = Unit
         override fun onExit() = Unit
@@ -152,204 +154,222 @@ class VirtualAgentController(agentId:Double):AgentController(agentId)
         {
             val beliefState = And.make(beliefState) ?: contradiction
             val behaviour = behaviourDictionary.find {beliefState isSubsetOf it.first}?.second
-                ?: return println("ambiguous behaviour specified: $beliefState, $behaviourDictionary")
-            println("behaviour specified: $behaviour, $behaviourDictionary")
             aiStateMachine.stateAccess.withLock()
             {
                 aiStateMachine.value = when (behaviour)
                 {
                     is Behaviour.Wander -> Wander()
-                    is Behaviour.Guard -> Guard(behaviour.x.toDouble(),behaviour.y.toDouble(),behaviour.direction.angle)
+                    is Behaviour.Guard -> MoveTo(Simulation.Cell.getElseMake(behaviour.x,behaviour.y),behaviour.direction)
+                    null -> DoNothing()
                 }
             }
         }
 
-        // todo: make agents avoid obstacles
+        // todo: add patrol state
+
+        private inner class DoNothing:AiState
+        {
+            override fun onEnter() = Unit
+            override fun onExit() = Unit
+            override fun update() = Unit
+        }
+
+        // todo: add parameters to wander so can specify local wander or something
 
         private inner class Wander:AiState
         {
-            private val MOVE_MAX_UPDATE_DURATION:Int = 50
+            private val MAX_MAGNITUDE:Int = 10
 
-            private val stateMachine = StateMachine<AiState>(Turn())
+            val stateMachine = StateMachine(MoveTo(randomCell(),randomDirection()))
 
             override fun onEnter() = Unit
             override fun onExit() = Unit
-            override fun update() = stateMachine.value.update()
-
-            private inner class Turn:AiState
+            override fun update()
             {
-                val destinationDirection:Double = (360.0*Math.random())-180.0+direction
+                stateMachine.value.update()
 
-                override fun onEnter() = Unit
-                override fun onExit() = Unit
-
-                override fun update()
+                if (stateMachine.value.stateMachine.value is MoveTo.Done)
                 {
-                    when
+                    stateMachine.stateAccess.withLock()
                     {
-                        direction < destinationDirection-TURN_THRESHOLD ->
-                        {
-                            direction += Math.min(Math.abs(direction-destinationDirection),TURN_MAX_SPEED)
-                        }
-                        direction > destinationDirection+TURN_THRESHOLD ->
-                        {
-                            direction -= Math.min(Math.abs(direction-destinationDirection),TURN_MAX_SPEED)
-                        }
-                        else ->
-                        {
-                            stateMachine.stateAccess.withLock()
-                            {
-                                stateMachine.value = MoveForward()
-                            }
-                        }
+                        stateMachine.value = MoveTo(randomCell(),randomDirection())
                     }
                 }
             }
 
-            private inner class MoveForward:AiState
+            private fun randomCell():Simulation.Cell
             {
-                var remainingSteps:Int = (MOVE_MAX_UPDATE_DURATION*Math.random()).toInt()
+                val x = (position.x+(Math.random()-0.5)*MAX_MAGNITUDE).toInt()
+                val y = (position.y+(Math.random()-0.5)*MAX_MAGNITUDE).toInt()
+                return Simulation.Cell.getElseMake(x,y)
+            }
 
-                override fun onEnter() = Unit
-                override fun onExit() = Unit
-
-                override fun update()
-                {
-                    if (--remainingSteps > 0)
-                    {
-                        val deltaX = Math.cos(Math.toRadians(direction))*MOVE_MAX_SPEED
-                        val deltaY = Math.sin(Math.toRadians(direction))*MOVE_MAX_SPEED
-                        position = Point2D(position.x+deltaX,position.y+deltaY)
-                    }
-                    else
-                    {
-                        stateMachine.stateAccess.withLock()
-                        {
-                            stateMachine.value = Turn()
-                        }
-                    }
-                }
+            private fun randomDirection():Behaviour.CardinalDirection
+            {
+                return Behaviour.CardinalDirection.values().getRandom()
             }
         }
 
-        private inner class Guard(val destinationX:Double,val destinationY:Double,val destinationDirection:Double):AiState
+        /**
+         * behaviour that makes the agent move to [targetCell] and face
+         * [targetDirection] once it arrives there.
+         */
+        inner class MoveTo(val targetCell:Simulation.Cell,val targetDirection:Behaviour.CardinalDirection):AiState
         {
-            private val stateMachine = StateMachine<AiState>(PlanRoute())
+            val stateMachine = StateMachine<AiState>(PlanRoute())
 
             override fun onEnter() = Unit
             override fun onExit() = Unit
             override fun update() = stateMachine.value.update()
 
-            private inner class PlanRoute():AiState
+            inner class PlanRoute():AiState
             {
-                val route = future()
+                val MIN_WORK = 1000
+                val WORK_MULTIPLIER = 50.0
+
+                val destinationAStarCell = targetCell
+                    .let {CellToAStarNodeAdapter(it)}
+
+                val pathPlanningTask = future()
                 {
                     Thread.currentThread().priority = Thread.MIN_PRIORITY
-                    val destinationCell = Simulation.Cell.getElseMake(
-                        Math.round(destinationX).toInt(),
-                        Math.round(destinationY).toInt())
-                        .let {CellToAStarNodeAdapter(it)}
                     val startCell = Simulation.Cell.getElseMake(
                         Math.round(position.x).toInt(),
                         Math.round(position.y).toInt())
                         .let {CellToAStarNodeAdapter(it)}
-                    AStar.run(startCell,destinationCell)
+                    val maxIterations = (position.distance(targetCell.x.toDouble(),targetCell.y.toDouble())*WORK_MULTIPLIER)+MIN_WORK
+                    AStar.run(startCell,destinationAStarCell,maxIterations.toInt())
                 }
 
                 override fun onEnter() = Unit
                 override fun onExit() = Unit
-
-                // todo: if it is impossible to get to the destination, just get really close to it instead
                 override fun update()
                 {
-                    // if the route planning isn't done yet, come back later
-                    if (!route.isDone) return
-
-                    // else it is done. if a path was found, go to the next state
-                    val result = route.await()
-                    if (result != null)
+                    // if planning is done, go to the next state
+                    if (pathPlanningTask.isDone)
                     {
                         stateMachine.stateAccess.withLock()
                         {
-                            stateMachine.value = FollowRoute(result.map {it.cell})
+                            val aStarResult = pathPlanningTask.await()
+                            val goal = aStarResult.parents.minBy {it.key.estimateTravelCostTo(destinationAStarCell)}?.key!!
+                            val path = aStarResult.plotPathTo(goal).map {it.cell}
+                            stateMachine.value = FollowRoute(path)
                         }
                     }
-
-                    // try to find the path again otherwise
-                    else
-                    {
-                        stateMachine.stateAccess.withLock()
-                        {
-                            stateMachine.value = PlanRoute()
-                        }
-                    }
-                }
-
-                inner class CellToAStarNodeAdapter(val cell:Simulation.Cell):AStar.Node<CellToAStarNodeAdapter>
-                {
-                    override val neighbours:Map<CellToAStarNodeAdapter,Double> get()
-                    {
-                        return listOf(
-                            CellToAStarNodeAdapter(Simulation.Cell.getElseMake(cell.x+1,cell.y)),
-                            CellToAStarNodeAdapter(Simulation.Cell.getElseMake(cell.x-1,cell.y)),
-                            CellToAStarNodeAdapter(Simulation.Cell.getElseMake(cell.x,cell.y+1)),
-                            CellToAStarNodeAdapter(Simulation.Cell.getElseMake(cell.x,cell.y-1)))
-                            .filter {it.cell !in obstacles}
-                            .associate {it to 1.0}
-                    }
-
-                    override fun estimateTravelCostTo(other:CellToAStarNodeAdapter):Double
-                    {
-                        return (Math.abs(cell.x-other.cell.x)+Math.abs(cell.y-other.cell.y)).toDouble()
-                    }
-
-                    override fun equals(other:Any?):Boolean = other is CellToAStarNodeAdapter && other.cell == cell
-
-                    override fun hashCode():Int = cell.hashCode()
-
-                    override fun toString():String = cell.toString()
                 }
             }
 
-            private inner class FollowRoute(path:List<Simulation.Cell>):AiState
+            inner class FollowRoute(private var path:List<Simulation.Cell>):AiState
             {
-                var path:List<Simulation.Cell> = path
-                    private set
-
                 override fun onEnter() = Unit
                 override fun onExit() = Unit
-
                 override fun update()
                 {
-                    // todo also make the agent face the direction it's moving too!
-                    val destination = path.first()
-                        .let {Point2D(it.x.toDouble(),it.y.toDouble())}
-                    val remainingDistance = position.distance(destination)
-                    val delta = destination.subtract(position).normalize()
-                        .multiply(Math.min(remainingDistance,MOVE_MAX_SPEED))
-                    position = position.add(delta)
-
-                    if (remainingDistance < MOVE_THRESHOLD)
-                    {
-                        path = path.drop(1)
-                    }
-
+                    // if there is no destination to move to, move to the next state
                     if (path.isEmpty())
                     {
                         stateMachine.stateAccess.withLock()
                         {
                             stateMachine.value = AlignDirection()
                         }
+                        return
+                    }
+
+                    // there is a destination to move to...
+                    // destination position
+                    val destination = path.first().let {Point2D(it.x.toDouble(),it.y.toDouble())}
+                    // angle between positive x axis and line from our position to destination
+                    val destinationDirection = angle(position.x,position.y,destination.x,destination.y)
+                    // how much the agent should change directions to turn towards the destination this update
+                    val deltaDirection = angleDifference(direction,destinationDirection).coerceIn(-TURN_MAX_SPEED,TURN_MAX_SPEED)
+                    // distance from our position to destination
+                    val distanceToDestination = position.distance(destination)
+                    // how much the agent should displace to move towards the destination this update
+                    val deltaPosition = destination.subtract(position).normalize().multiply(Math.min(distanceToDestination,MOVE_MAX_SPEED))
+
+                    // if we're not facing the destination yet, turn towards it
+                    if (Math.abs(deltaDirection) > TURN_THRESHOLD)
+                    {
+                        direction += deltaDirection
+                    }
+
+                    // we're facing the destination, move towards it
+                    else
+                    {
+                        position = position.add(deltaPosition)
+                    }
+
+                    // if we have arrived at the destination, remove it from the
+                    // path so we can begin moving to the next destination in
+                    // the next update
+                    if (distanceToDestination < MOVE_THRESHOLD)
+                    {
+                        path = path.drop(1)
                     }
                 }
             }
 
-            private inner class AlignDirection():AiState
+            inner class AlignDirection():AiState
             {
                 override fun onEnter() = Unit
                 override fun onExit() = Unit
-                override fun update() = Unit //todo
+                override fun update()
+                {
+                    // turn towards the destination this update
+                    val deltaDirection = angleDifference(direction,targetDirection.angle).coerceIn(-TURN_MAX_SPEED,TURN_MAX_SPEED)
+
+                    // if we're not facing the destination yet, turn towards it
+                    if (Math.abs(deltaDirection) > TURN_THRESHOLD)
+                    {
+                        direction += deltaDirection
+                    }
+
+                    // we're facing the destination, go to the next state
+                    else
+                    {
+                        stateMachine.stateAccess.withLock()
+                        {
+                            stateMachine.value = Done()
+                        }
+                    }
+                }
             }
+
+            inner class Done():AiState
+            {
+                override fun onEnter() = Unit
+                override fun onExit() = Unit
+                override fun update() = Unit
+            }
+        }
+
+        /**
+         * wraps a [Simulation.Cell] object and provides the [AStar.Node]
+         * interface so it can be passed to [AStar.run].
+         */
+        private inner class CellToAStarNodeAdapter(val cell:Simulation.Cell):AStar.Node<CellToAStarNodeAdapter>
+        {
+            override val neighbours:Map<CellToAStarNodeAdapter,Double> get()
+            {
+                return listOf(
+                    CellToAStarNodeAdapter(Simulation.Cell.getElseMake(cell.x+1,cell.y)),
+                    CellToAStarNodeAdapter(Simulation.Cell.getElseMake(cell.x-1,cell.y)),
+                    CellToAStarNodeAdapter(Simulation.Cell.getElseMake(cell.x,cell.y+1)),
+                    CellToAStarNodeAdapter(Simulation.Cell.getElseMake(cell.x,cell.y-1)))
+                    .filter {it.cell !in obstacles}
+                    .associate {it to 1.0}
+            }
+
+            override fun estimateTravelCostTo(other:CellToAStarNodeAdapter):Double
+            {
+                return (Math.abs(cell.x-other.cell.x)+Math.abs(cell.y-other.cell.y)).toDouble()
+            }
+
+            override fun equals(other:Any?):Boolean = other is CellToAStarNodeAdapter && other.cell == cell
+
+            override fun hashCode():Int = cell.hashCode()
+
+            override fun toString():String = cell.toString()
         }
     }
 

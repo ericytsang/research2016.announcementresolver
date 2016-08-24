@@ -18,7 +18,7 @@ object AStar
         fun estimateTravelCostTo(other:This):Double
     }
 
-    fun <Node:AStar.Node<Node>> run(start:Node,goal:Node):List<Node>?
+    fun <Node:AStar.Node<Node>> run(start:Node,goal:Node,maxIterations:Int):Result<Node>
     {
         // set of evaluated nodes
         val closedSet = mutableSetOf<Node>()
@@ -27,31 +27,25 @@ object AStar
         val openSet = mutableSetOf(start)
 
         // maps nodes to the node that it can be most efficiently reached from
-        val parents = mutableMapOf<Node,Node>()
+        val parents = mutableMapOf<Node,Node?>(start to null)
 
         // maps nodes to the total cost it takes to traverse to it
         val costs = mutableMapOf(start to 0.0)
 
         // maps nodes to the estimated cost it takes to travel to it from the start plus from it to the goal
-        val estimatedTotalCosts = mutableMapOf(start to start.estimateTravelCostTo(goal))
+        val estimatedCosts = mutableMapOf(start to start.estimateTravelCostTo(goal))
 
         // keep running the algorithm until we exhaust all possibilities
-        while (openSet.isNotEmpty())
+        for (i in 1..maxIterations)
         {
             // get a reference to the node closest to the goal
-            val closestNode = openSet.minBy {estimatedTotalCosts[it]!!}!!
+            val closestNode = openSet.minBy {estimatedCosts[it]!!}
 
-            // if the closest node is the goal, return the path to the goal
-            if (closestNode == goal)
+            // if the closest node is the goal or we have exhausted all
+            // possibilities, break out of the loop to return a result
+            if (closestNode == goal || closestNode == null)
             {
-                val result = LinkedList<Node>()
-                result.add(closestNode)
-
-                while (true)
-                {
-                    val parent = parents[result.first] ?: return result
-                    result.add(0,parent)
-                }
+                break
             }
 
             // evaluate the node
@@ -80,12 +74,35 @@ object AStar
                 if (pathCost < costs[neighbour] ?: Double.MAX_VALUE)
                 {
                     parents[neighbour] = closestNode
-                    estimatedTotalCosts[neighbour] = pathCost+neighbour.estimateTravelCostTo(goal)
+                    estimatedCosts[neighbour] = pathCost+neighbour.estimateTravelCostTo(goal)
                     costs[neighbour] = pathCost
                 }
             }
         }
 
-        return null
+        return Result(start,parents,costs,estimatedCosts)
+    }
+
+    class Result<Node:AStar.Node<Node>>(val source:Node,val parents:Map<Node,Node?>,val costs:Map<Node,Double>,val estimatedCosts:Map<Node,Double>)
+    {
+        fun plotPathTo(goal:Node):List<Node>
+        {
+            if (goal !in parents.keys)
+            {
+                throw IllegalArgumentException("no known parent node for goal: $goal")
+            }
+
+            // create the list that will contain the path
+            val result = listOf(goal).let {LinkedList(it)}
+
+            // construct the path by inserting the parent of the first node in
+            // the list into the first position of the list until we reach the
+            // source node
+            while (true)
+            {
+                val parent = parents[result.first] ?: return result
+                result.add(0,parent)
+            }
+        }
     }
 }
