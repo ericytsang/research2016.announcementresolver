@@ -1,0 +1,35 @@
+[
+    {
+        "color": {
+            "r": 0,
+            "b": 0,
+            "g": 0.501960813999176
+        },
+        "targetK": "asdas",
+        "position": {
+            "x": 2,
+            "y": 5
+        },
+        "initialK": ["hasfasdf"],
+        "operator": {"name": "SATISFIABILITY"},
+        "direction": "EAST"
+    },
+    {
+        "color": {
+            "r": 1,
+            "b": 1,
+            "g": 0
+        },
+        "targetK": "dsf",
+        "position": {
+            "x": 9,
+            "y": 3
+        },
+        "initialK": [
+            "asdads",
+            "asdad"
+        ],
+        "operator": {"name": "HAMMING_DISTANCE"},
+        "direction": "SOUTH"
+    }
+]

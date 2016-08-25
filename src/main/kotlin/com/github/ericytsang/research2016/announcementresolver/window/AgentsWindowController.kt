@@ -1,23 +1,20 @@
 package com.github.ericytsang.research2016.announcementresolver.window
 
+import com.github.ericytsang.lib.javafxutils.JavafxUtils
 import com.github.ericytsang.lib.simulation.Simulation
 import com.github.ericytsang.research2016.announcementresolver.guicomponent.AgentsTableView
 import com.github.ericytsang.research2016.announcementresolver.guicomponent.DisplayModeComboBox
 import com.github.ericytsang.research2016.announcementresolver.guicomponent.RevisionFunctionConfigPanel
+import com.github.ericytsang.research2016.announcementresolver.persist.AgentsSaveFile
 import com.github.ericytsang.research2016.announcementresolver.simulation.AgentController
-import com.github.ericytsang.research2016.announcementresolver.simulation.Behaviour
-import com.github.ericytsang.research2016.announcementresolver.simulation.CanvasRenderer
 import com.github.ericytsang.research2016.announcementresolver.simulation.Obstacle
 import com.github.ericytsang.research2016.announcementresolver.simulation.VirtualAgentController
 import com.github.ericytsang.research2016.announcementresolver.simulation.Wall
-import com.github.ericytsang.research2016.announcementresolver.toJSONObject
-import com.github.ericytsang.research2016.announcementresolver.toProblemInstance
 import com.github.ericytsang.research2016.propositionallogic.BruteForceAnnouncementResolutionStrategy
 import com.github.ericytsang.research2016.propositionallogic.ComparatorBeliefRevisionStrategy
 import com.github.ericytsang.research2016.propositionallogic.OrderedAnnouncementResolutionStrategy
 import com.github.ericytsang.research2016.propositionallogic.Proposition
 import com.github.ericytsang.research2016.propositionallogic.toDnf
-import com.sun.javafx.collections.ObservableListWrapper
 import javafx.application.Platform
 import javafx.beans.InvalidationListener
 import javafx.event.EventHandler
@@ -30,13 +27,9 @@ import javafx.scene.Scene
 import javafx.scene.control.Button
 import javafx.scene.control.CheckMenuItem
 import javafx.scene.control.Label
-import javafx.scene.paint.Color
 import javafx.stage.FileChooser
 import javafx.stage.Stage
-import org.json.JSONArray
-import org.json.JSONObject
 import java.io.File
-import java.io.PrintWriter
 import java.net.URL
 import java.nio.file.Paths
 import java.util.LinkedHashMap
@@ -320,11 +313,13 @@ class AgentsWindowController:Initializable
             }
 
             // automatically deactivite the "jump to initial position flag"
-            val newListItems = agentsTableView.items
-                .map {it.copy(shouldJumpToInitialPosition = false)}
+            val newListItems = agentsTableView.items.map {it.copy(shouldJumpToInitialPosition = false)}
             if (newListItems != agentsTableView.items)
             {
-                agentsTableView.items.setAll(newListItems)
+                Platform.runLater()
+                {
+                    agentsTableView.items.setAll(newListItems)
+                }
             }
         })
     }
@@ -488,21 +483,25 @@ class AgentsWindowController:Initializable
         val file = FileChooser()
             .apply()
             {
-                title = "Save input data"
+                title = "Save Input Data"
                 initialDirectory = File(Paths.get(".").toAbsolutePath().normalize().toString())
             }
             .showSaveDialog(rootLayout.scene.window)
 
         if (file != null)
         {
-            val json = JSONArray()
-            agentsTableView.items
-                .map {it.problemInstance.toJSONObject()}
-                .forEach {json.put(it)}
-
-            PrintWriter(file.outputStream()).use()
+            try
             {
-                it.print(json.toString(4))
+                AgentsSaveFile(file).use()
+                {
+                    it.agents.clear()
+                    it.agents += agentsTableView.items
+                        .map {AgentsSaveFile.Agent(it.problemInstance,it.newPosition,it.newDirection,it.color)}
+                }
+            }
+            catch (ex:Exception)
+            {
+                JavafxUtils.showErrorDialog("Save Input Data","Failed to save input data",ex)
             }
         }
     }
@@ -512,29 +511,47 @@ class AgentsWindowController:Initializable
      */
     @FXML private fun loadFromFile()
     {
+        // let the user pick a file to load from
         val file = FileChooser()
             .apply()
             {
-                title = "Load input data"
+                title = "Load Input Data"
                 initialDirectory = File(Paths.get(".").toAbsolutePath().normalize().toString())
             }
             .showOpenDialog(rootLayout.scene.window)
 
+        // if a file was chosen, load data from it
         if (file != null)
         {
-            val fileText = file
-                .inputStream()
-                .use {it.readBytes().let {String(it)}}
+            try
+            {
+                AgentsSaveFile(file).use()
+                {
+                    for (i in 1..100)
+                    {
+                        var agentId = 0.0
 
-            agentsTableView.items.clear()
-            // todo: allow loading from files.....right now, functionality was removed because we need to be able to save and load initial positions for robots
-            agentsTableView.items.addAll(fileText
-                .let {JSONArray(it)}
-                .map {it as JSONObject}
-                .map {it.toProblemInstance()}
-                .map {AgentsTableView.RowData(it,RevisionFunctionConfigPanel(),emptySet(),Simulation.Cell.getElseMake(0,0),Behaviour.CardinalDirection.EAST,true,Color.RED,Math.random())}
-                .apply {forEach {it.revisionFunctionConfigPanel.setValuesFrom(it.problemInstance.beliefRevisionStrategy)}}
-                .let {ObservableListWrapper(it)})
+                        // load agents from the file
+                        val agents = it.agents
+                            .map {AgentsTableView.RowData(it.problemInstance,RevisionFunctionConfigPanel(),emptySet(),it.position,it.direction,true,it.color,agentId++)}
+                            .apply {forEach {it.revisionFunctionConfigPanel.setValuesFrom(it.problemInstance.beliefRevisionStrategy)}}
+
+                        // try to reload from the file again if generated agent IDs are not unique
+                        if (agents.map {it.agentId}.toSet().size != agents.size)
+                        {
+                            throw IllegalArgumentException("failed to generate unique agent IDs")
+                        }
+
+                        // add them to the table view
+                        agentsTableView.items.setAll(agents)
+                        return
+                    }
+                }
+            }
+            catch (ex:Exception)
+            {
+                JavafxUtils.showErrorDialog("Load Input Data","Failed to load input data",ex)
+            }
         }
     }
 }

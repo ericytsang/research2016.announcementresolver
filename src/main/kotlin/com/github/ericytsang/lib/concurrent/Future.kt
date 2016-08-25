@@ -6,7 +6,7 @@ fun <R> future(block:()->R) = Future(block)
 
 class Future<out R> internal constructor(val block:()->R)
 {
-    private val workerThread = thread()
+    val workerThread = thread()
     {
         try
         {

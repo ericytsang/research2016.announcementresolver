@@ -42,7 +42,6 @@ abstract class AgentController(val agentId:Double):Simulation.Entity,CanvasRende
      * sends information about the location of obstacles to the remote agent so
      * it knows where they are so it can do better path finding.
      */
-    // todo: call this function!
     abstract fun setObstacles(obstacles:Set<Simulation.Cell>)
 
     /**

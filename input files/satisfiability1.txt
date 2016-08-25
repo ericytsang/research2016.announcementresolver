@@ -2,11 +2,11 @@
     {
         "initialK" : ["patrol"],
         "targetK" : "patrol",
-        "operator" : {"name" : "satisfiability"},
+        "operator" : {"name" : "SATISFIABILITY"},
     },
     {
         "initialK" : ["-breach","breach xor patrol",],
         "targetK" : "-patrol",
-        "operator" : {"name" : "satisfiability"},
+        "operator" : {"name" : "SATISFIABILITY"},
     },
 ]

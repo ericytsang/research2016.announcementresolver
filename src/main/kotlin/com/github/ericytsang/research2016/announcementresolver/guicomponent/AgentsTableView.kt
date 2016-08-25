@@ -11,7 +11,9 @@ import com.github.ericytsang.research2016.propositionallogic.Proposition
 import com.github.ericytsang.research2016.propositionallogic.Variable
 import com.github.ericytsang.research2016.propositionallogic.makeFrom
 import com.github.ericytsang.research2016.propositionallogic.toParsableString
+import com.sun.javafx.collections.ObservableListWrapper
 import javafx.beans.InvalidationListener
+import javafx.beans.Observable
 import javafx.beans.property.SimpleStringProperty
 import javafx.scene.control.Alert
 import javafx.scene.control.ButtonType
@@ -23,6 +25,7 @@ import javafx.scene.control.TextField
 import javafx.scene.layout.VBox
 import javafx.scene.paint.Color
 import javafx.util.Callback
+import java.util.ArrayList
 
 /**
  * allows the user to view and modify a collection of [AgentsTableView.RowData]
@@ -77,6 +80,8 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
 
     init
     {
+        items = ObservableListWrapper(ArrayList())
+
         // add columns to the table view
         columns += TableColumn<RowData,String>().apply()
         {
