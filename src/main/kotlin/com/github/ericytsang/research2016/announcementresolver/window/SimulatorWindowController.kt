@@ -52,4 +52,20 @@ class SimulatorWindowController:Initializable
         simulation = Simulation(CanvasRenderer(canvas,32.0),Looper.Factory.new {SimpleLooper(it)})
         simulation.entityToCellsMap += Background() to emptySet()
     }
+
+    /**
+     * invoked by framework when the File > Close [MenuItem] is pressed.
+     */
+    @FXML private fun closeWindow()
+    {
+        stage.hide()
+    }
+
+    /**
+     * invoked by framework when the Help > About [MenuItem] is pressed.
+     */
+    @FXML private fun showHelpDialog()
+    {
+
+    }
 }

@@ -618,4 +618,20 @@ class AgentsWindowController:Initializable
             }
         }
     }
+
+    /**
+     * invoked by framework when the File > Close [MenuItem] is pressed.
+     */
+    @FXML private fun closeWindow()
+    {
+        stage.hide()
+    }
+
+    /**
+     * invoked by framework when the Help > About [MenuItem] is pressed.
+     */
+    @FXML private fun showHelpDialog()
+    {
+
+    }
 }

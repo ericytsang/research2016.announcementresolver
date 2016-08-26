@@ -35,4 +35,34 @@ class ObstacleWindowController
         private set
 
     @FXML lateinit var obstacleTableView:ObstacleTableView
+
+    /**
+     * invoked by framework when the File > Save [MenuItem] is pressed.
+     */
+    @FXML private fun saveToFile()
+    {
+    }
+
+    /**
+     * invoked by framework when the File > Load [MenuItem] is pressed.
+     */
+    @FXML private fun loadFromFile()
+    {
+    }
+
+    /**
+     * invoked by framework when the File > Close [MenuItem] is pressed.
+     */
+    @FXML private fun closeWindow()
+    {
+        stage.hide()
+    }
+
+    /**
+     * invoked by framework when the Help > About [MenuItem] is pressed.
+     */
+    @FXML private fun showHelpDialog()
+    {
+
+    }
 }
