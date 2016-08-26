@@ -611,9 +611,8 @@ class AgentsWindowController:Initializable
             {
                 // load agents from the file
                 val parsedAgents = AgentsSaveFileParser.load(file)
-                var agentId = 0.0
                 val agents = parsedAgents
-                    .map {AgentsTableView.RowData(agentId++,false,it.problemInstance,emptySet(),it.color,it.position,it.direction,true,true)}
+                    .map {AgentsTableView.RowData(Math.random(),false,it.problemInstance,emptySet(),it.color,it.position,it.direction,true,true)}
 
                 // try to reload from the file again if generated agent IDs are not unique
                 if (agents.map {it.agentId}.toSet().size != agents.size)
