@@ -40,10 +40,34 @@ class ObstacleTableView:EditableTableView<ObstacleTableView.RowData>()
 
         columns += TableColumn<RowData,String>().apply()
         {
-            text = "Obstacles"
+            text = "x1"
             cellValueFactory = Callback()
             {
-                it.value.toString().let {SimpleStringProperty(it)}
+                SimpleStringProperty(it.value.cell1.x.toString())
+            }
+        }
+        columns += TableColumn<RowData,String>().apply()
+        {
+            text = "y1"
+            cellValueFactory = Callback()
+            {
+                SimpleStringProperty(it.value.cell1.y.toString())
+            }
+        }
+        columns += TableColumn<RowData,String>().apply()
+        {
+            text = "x2"
+            cellValueFactory = Callback()
+            {
+                SimpleStringProperty(it.value.cell2.x.toString())
+            }
+        }
+        columns += TableColumn<RowData,String>().apply()
+        {
+            text = "y2"
+            cellValueFactory = Callback()
+            {
+                SimpleStringProperty(it.value.cell2.y.toString())
             }
         }
 
@@ -75,6 +99,12 @@ class ObstacleTableView:EditableTableView<ObstacleTableView.RowData>()
     }
 
     data class RowData(val cell1:Simulation.Cell,val cell2:Simulation.Cell)
+    {
+        override fun toString():String
+        {
+            return "[ ${cell1.x} , ${cell1.y} ] , [ ${cell2.x} , ${cell2.y} ]"
+        }
+    }
 
     private class InputDialog(val previousInput:RowData?):Alert(AlertType.NONE)
     {
