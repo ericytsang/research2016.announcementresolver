@@ -168,12 +168,14 @@ class AgentsWindowController:Initializable
             field.status.addAndUpdate(Change.Observer.new()
             {
                 // set the announcement label text according to the status of the new future
-                announcementLabel.text = when(field.status.value)
+                val labelText = when(field.status.value)
                 {
                     Future.Status.PENDING -> "finding announcement..."
                     Future.Status.SUCCESS -> field.await()?.toDnf()?.toString() ?: "no announcement found..."
                     Future.Status.FAILURE -> field.exception.value!!.message
                 }
+
+                Platform.runLater {announcementLabel.text = labelText}
             })
         }
 
