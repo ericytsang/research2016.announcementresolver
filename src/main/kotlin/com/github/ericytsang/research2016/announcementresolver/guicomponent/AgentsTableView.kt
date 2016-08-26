@@ -11,21 +11,26 @@ import com.github.ericytsang.research2016.propositionallogic.Proposition
 import com.github.ericytsang.research2016.propositionallogic.Variable
 import com.github.ericytsang.research2016.propositionallogic.makeFrom
 import com.github.ericytsang.research2016.propositionallogic.toParsableString
-import com.sun.javafx.collections.ObservableListWrapper
 import javafx.beans.InvalidationListener
-import javafx.beans.Observable
+import javafx.beans.property.SimpleObjectProperty
 import javafx.beans.property.SimpleStringProperty
+import javafx.geometry.Insets
+import javafx.geometry.Rectangle2D
+import javafx.scene.Node
 import javafx.scene.control.Alert
 import javafx.scene.control.ButtonType
 import javafx.scene.control.CheckBox
 import javafx.scene.control.ComboBox
 import javafx.scene.control.Label
+import javafx.scene.control.TableCell
 import javafx.scene.control.TableColumn
 import javafx.scene.control.TextField
+import javafx.scene.layout.Background
+import javafx.scene.layout.BackgroundFill
+import javafx.scene.layout.CornerRadii
 import javafx.scene.layout.VBox
 import javafx.scene.paint.Color
 import javafx.util.Callback
-import java.util.ArrayList
 
 /**
  * allows the user to view and modify a collection of [AgentsTableView.RowData]
@@ -39,10 +44,17 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
         /**
          * names of columns in the table view.
          */
+        private const val COLUMN_NAME_CONNECTIVITY:String = "Online"
         private const val COLUMN_NAME_CURRENT_K:String = "Current belief state"
         private const val COLUMN_NAME_TARGET_K:String = "Target belief state"
         private const val COLUMN_NAME_BELIEF_REVISION_OPERATOR:String = "Belief revision operator"
         private const val COLUMN_NAME_REVISED_K:String = "Revised belief state"
+
+        /**
+         * background of cells in the connectivity column based on their values.
+         */
+        private val CONNECTIVITY_CELL_CONNECTED_BACKGROUND:Background = Background(BackgroundFill(Color(0.5647059,0.93333334,0.5647059,0.75),CornerRadii.EMPTY,Insets.EMPTY))
+        private val CONNECTIVITY_CELL_DISCONNECTED_BACKGROUND:Background = Background(BackgroundFill(Color(1.0,0.7137255,0.75686276,0.75),CornerRadii.EMPTY,Insets.EMPTY))
 
         /**
          * text used in the input dialog box shown when creating a new list item
@@ -80,9 +92,58 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
 
     init
     {
-        items = ObservableListWrapper(ArrayList())
-
         // add columns to the table view
+        columns += TableColumn<RowData,String>().apply()
+        {
+            text = COLUMN_NAME_CONNECTIVITY
+            cellFactory = Callback()
+            {
+                object:TableCell<RowData,String>()
+                {
+                    override fun updateItem(item:String?,empty:Boolean)
+                    {
+                        super.updateItem(item,empty)
+
+                        if (empty || item == null)
+                        {
+                            text = null
+                            graphic = null
+                        }
+                        else
+                        {
+                            text = item.toString()
+                        }
+
+                        when((tableRow.item as RowData?)?.isConnected)
+                        {
+                            true ->
+                            {
+                                background = CONNECTIVITY_CELL_CONNECTED_BACKGROUND
+                            }
+                            false ->
+                            {
+                                background = CONNECTIVITY_CELL_DISCONNECTED_BACKGROUND
+                            }
+                            null ->
+                            {
+                                background = null
+                            }
+                        }
+                    }
+                }
+            }
+            cellValueFactory = Callback()
+            {
+                if (it.value.isConnected)
+                {
+                    "yes"
+                }
+                else
+                {
+                    "no"
+                }.let {SimpleStringProperty(it)}
+            }
+        }
         columns += TableColumn<RowData,String>().apply()
         {
             text = COLUMN_NAME_CURRENT_K
@@ -110,7 +171,7 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
             text = COLUMN_NAME_BELIEF_REVISION_OPERATOR
             cellValueFactory = Callback()
             {
-                it.value.revisionFunctionConfigPanel.revisionOperatorComboBox.value.name
+                it.value.problemInstance.beliefRevisionStrategy.friendlyName
                     .let {SimpleStringProperty(it)}
             }
         }
@@ -172,7 +233,9 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
                 }
 
                 // done parsing...construct and return the row data object
-                return RowData(AnnouncementResolutionStrategy.ProblemInstance(initialK,targetK,beliefRevisionStrategy),inputDialog.operatorInputPane,emptySet(),newPosition,newDirection,shouldJumpToPosition,robotColor,robotId)
+                return RowData(robotId,false,
+                    AnnouncementResolutionStrategy.ProblemInstance(initialK,targetK,beliefRevisionStrategy),
+                    emptySet(),robotColor,newPosition,newDirection,shouldJumpToPosition,true)
             }
             catch (ex:Exception)
             {
@@ -206,14 +269,25 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
      * each [RowData] instance can be represented as a row in [AgentsTableView].
      */
     data class RowData(
+        val agentId:Double,
+        val isConnected:Boolean,
         val problemInstance:AnnouncementResolutionStrategy.ProblemInstance,
-        val revisionFunctionConfigPanel:RevisionFunctionConfigPanel,
         val actualK:Set<Proposition>,
+        val color:Color,
         val newPosition:Simulation.Cell,
         val newDirection:Behaviour.CardinalDirection,
-        val shouldJumpToInitialPosition:Boolean,
-        val color:Color,
-        val agentId:Double)
+
+        /**
+         * set to true to make the agent controller set the position and
+         * direction of the agent to [newPosition] and [newDirection] respectively.
+         */
+        var shouldJumpToPosition:Boolean,
+
+        /**
+         * true to make the agent controller update its agent with the
+         * information in this instance.
+         */
+        var isManuallyEdited:Boolean) //todo: get rid of the part that calls copy to change this value, and make it change it in-place instead
 
     /**
      * returns a set of all unique [Variable] instances in [items].
@@ -269,7 +343,7 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
 
         val jumpToInitialPositionCheckBox = CheckBox().apply()
         {
-            isSelected = model?.shouldJumpToInitialPosition ?: true
+            isSelected = model?.shouldJumpToPosition ?: true
             val listener = InvalidationListener()
             {
                 initialXPositionTextField.isDisable = !isSelected
@@ -280,8 +354,12 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
             listener.invalidated(selectedProperty())
         }
 
-        val operatorInputPane = model?.revisionFunctionConfigPanel
-            ?: RevisionFunctionConfigPanel()
+        val operatorInputPane = RevisionFunctionConfigPanel()
+            .apply()
+            {
+                val beliefRevisionStrategy = model?.problemInstance?.beliefRevisionStrategy ?: return@apply
+                setValuesFrom(beliefRevisionStrategy)
+            }
 
         init
         {

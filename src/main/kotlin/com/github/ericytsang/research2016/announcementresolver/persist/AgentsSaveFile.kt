@@ -20,7 +20,6 @@ import org.json.JSONObject
 import java.io.Closeable
 import java.io.File
 import java.io.PrintWriter
-import java.util.ArrayList
 
 /**
  * Created by surpl on 8/24/2016.
@@ -88,21 +87,20 @@ class AgentsSaveFile(val file:File):Closeable
         }
     }
 
-    val agents = ArrayList<Agent>()
-
-    init
+    // initialize members from file data if possible
+    var agents:List<Agent> = if (file.exists())
     {
-        // initialize members from file data if possible
-        if (file.exists())
-        {
-            agents += file.inputStream()
-                // read file into a string
-                .use {it.readBytes().let {String(it)}}
-                // parse the string as a JSONArray of JSONObjects
-                .let {JSONArray(it)}.map {it as JSONObject}
-                // convert JSONObjects into agents
-                .map {it.toAgent()}
-        }
+        file.inputStream()
+            // read file into a string
+            .use {it.readBytes().let {String(it)}}
+            // parse the string as a JSONArray of JSONObjects
+            .let {JSONArray(it)}.map {it as JSONObject}
+            // convert JSONObjects into agents
+            .map {it.toAgent()}
+    }
+    else
+    {
+        emptyList()
     }
 
     override fun close()

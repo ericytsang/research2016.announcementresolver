@@ -1,6 +1,6 @@
 package com.github.ericytsang.research2016.announcementresolver.simulation
 
-import com.github.ericytsang.lib.oopatterns.SimpleBackedField
+import com.github.ericytsang.lib.oopatterns.BackedField
 import com.github.ericytsang.lib.simulation.Renderer
 import javafx.application.Platform
 import javafx.geometry.Point2D
@@ -23,7 +23,7 @@ class CanvasRenderer constructor(val canvas:Canvas,_cellLength:Double):Renderer
     /**
      * length of a cell used when rendering [Entity] objects.
      */
-    val cellLength = object:SimpleBackedField<Double>(0.0)
+    val cellLength = object:BackedField<Double>(0.0)
     {
         override fun FieldAccess<Double>.setter(proposedValue:Double)
         {

@@ -1,66 +1,79 @@
 package com.github.ericytsang.research2016.announcementresolver.simulation
 
+import com.github.ericytsang.lib.oopatterns.Change
 import com.github.ericytsang.lib.simulation.Simulation
 import com.github.ericytsang.research2016.propositionallogic.BeliefRevisionStrategy
 import com.github.ericytsang.research2016.propositionallogic.Proposition
-import com.github.ericytsang.research2016.propositionallogic.Variable
 import javafx.geometry.Point2D
 import javafx.scene.canvas.GraphicsContext
 import javafx.scene.paint.Color
 import javafx.scene.transform.Affine
 
-abstract class AgentController(val agentId:Double):Simulation.Entity,CanvasRenderer.Renderee
+abstract class AgentController:Simulation.Entity,CanvasRenderer.Renderee
 {
     /**
-     * try to connect this controller to the remote agent. this could be trying
-     * to connect to a physical robot, or connecting to a virtual robot.
+     * true if the agent controller is connected to the remote agent; false
+     * otherwise.
      */
-    abstract fun connect()
+    abstract val isConnected:Change.Observable<Boolean>
 
     /**
-     * disconnect from the remote agent.
+     * shuts down the controller so it no longer tries to control the remote
+     * robot. should be called before removing all references to this object.
      */
-    abstract fun disconnect()
+    abstract fun shutdown()
 
     /**
      * sets the belief state of the remote agent to the [beliefState].
      */
-    abstract fun setBeliefState(beliefState:Set<Proposition>)
+    abstract fun uploadBeliefState(beliefState:Set<Proposition>)
 
     /**
      * sets the belief revision strategy of the remote agent to [beliefRevisionStrategy].
      */
-    abstract fun setBeliefRevisionStrategy(beliefRevisionStrategy:BeliefRevisionStrategy)
+    abstract fun uploadBeliefRevisionStrategy(beliefRevisionStrategy:BeliefRevisionStrategy)
 
     /**
      * sends the behaviour dictionary to the remote agent so it knows how to
      * behave based on its belief state.
      */
-    abstract fun setBehaviourDictionary(behaviourDictionary:List<Pair<Proposition,Behaviour>>)
+    abstract fun uploadBehaviourDictionary(behaviourDictionary:List<Pair<Proposition,Behaviour>>)
 
     /**
      * sends information about the location of obstacles to the remote agent so
      * it knows where they are so it can do better path finding.
      */
-    abstract fun setObstacles(obstacles:Set<Simulation.Cell>)
+    abstract fun uploadObstacles(obstacles:Set<Simulation.Cell>)
 
     /**
      * sends the sentence to the remote agent to revise its belief state by it
-     * changing its behaviour.
+     * to change its behaviour.
      */
-    abstract fun reviseBeliefState(sentence:Proposition)
+    abstract fun uploadSentenceForBeliefRevision(sentence:Proposition)
 
     /**
-     * color used to represent this agent in the [CanvasRenderer].
+     * color used to represent this agent in the simulation.
      */
     abstract var bodyColor:Color
 
+    /**
+     * the direction the robot in the simulation.
+     */
     abstract override var direction:Double
 
+    /**
+     * the position of the robot in the simulation.
+     */
     abstract override var position:Point2D
 
+    /**
+     * the layer on which the agent should be drawn on in the simulation.
+     */
     final override val renderLayer:Int = RenderLayer.AGENT.value
 
+    /**
+     * renders the agent in the simulation.
+     */
     final override fun render(graphicsContext:GraphicsContext,viewTransform:Affine,cellLength:Double)
     {
         graphicsContext.fill = bodyColor

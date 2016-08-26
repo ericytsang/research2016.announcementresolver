@@ -1,10 +1,9 @@
 package com.github.ericytsang.research2016.announcementresolver.window
 
 import com.github.ericytsang.lib.javafxutils.JavafxUtils
-import com.github.ericytsang.lib.simulation.Simulation
+import com.github.ericytsang.lib.oopatterns.Change
 import com.github.ericytsang.research2016.announcementresolver.guicomponent.AgentsTableView
 import com.github.ericytsang.research2016.announcementresolver.guicomponent.DisplayModeComboBox
-import com.github.ericytsang.research2016.announcementresolver.guicomponent.RevisionFunctionConfigPanel
 import com.github.ericytsang.research2016.announcementresolver.persist.AgentsSaveFile
 import com.github.ericytsang.research2016.announcementresolver.simulation.AgentController
 import com.github.ericytsang.research2016.announcementresolver.simulation.Obstacle
@@ -152,6 +151,11 @@ class AgentsWindowController:Initializable
 
     private val simulationWindowController = SimulatorWindowController.new()
 
+    /**
+     * a map of agent ids to their corresponding agent controller.
+     */
+    private val agentControllers = LinkedHashMap<Double,AgentController>()
+
     override fun initialize(location:URL?,resources:ResourceBundle?)
     {
         /*
@@ -180,8 +184,12 @@ class AgentsWindowController:Initializable
          */
         behaviouralDictionaryWindowController.behaviouralDictionaryTableView.items.addListener(InvalidationListener()
         {
-            val oldItems = agentsTableView.items.toList()
-            agentsTableView.items.setAll(oldItems)
+            agentControllers.values.forEach()
+            {
+                it.uploadBehaviourDictionary(behaviouralDictionaryWindowController
+                    .behaviouralDictionaryTableView.items
+                    .map {it.proposition to it.behavior})
+            }
         })
 
         /*
@@ -190,8 +198,13 @@ class AgentsWindowController:Initializable
          */
         obstacleWindowController.obstacleTableView.items.addListener(InvalidationListener()
         {
-            val oldItems = agentsTableView.items.toList()
-            agentsTableView.items.setAll(oldItems)
+            agentControllers.values.forEach()
+            {
+                it.uploadObstacles(simulationWindowController
+                    .simulation.entityToCellsMap
+                    .filter {it.key is Obstacle}
+                    .flatMap {it.value}.toSet())
+            }
         })
 
         /*
@@ -253,72 +266,122 @@ class AgentsWindowController:Initializable
         })
 
         /*
-         * when the agent table view is modified, turn them into
-         * [AgentController] objects, and add them to the simulation.
+         * when the agent table view is modified, update the corresponding
+         * [AgentController] objects in [agentControllers].
          */
         agentsTableView.items.addListener(InvalidationListener()
         {
-            val existingAgents = simulationWindowController.simulation.entityToCellsMap.keys
-                .filter {it is AgentController}
-                .map {it as AgentController}
-                .associate {it.agentId to it}
-                .let {LinkedHashMap(it)}
-
-            // resolve agents removed from the table view and remove them from the simulation
-            val remainingAgentIds = agentsTableView.items
-                .map {it.agentId}
-            val keysToRemove = existingAgents
-                .filter {it.value.agentId !in remainingAgentIds}
-                .map {it.value}
-            keysToRemove.forEach()
+            // release resources and forget about existing agent controllers
+            // that no longer have a corresponding entry in the table view.
+            run()
             {
-                simulationWindowController.simulation.entityToCellsMap.remove(it)
-            }
-
-            // resolve new agents added to the table view and add them to the simulation
-            val newRows = agentsTableView.items.filter {it.agentId !in existingAgents.keys}
-
-            // todo: make this instantiate virtual or actual robot connections...
-            // todo: make connecting to agents asynchronsous because...it won't be an instantaneous thing when connecting to real robots
-            val newAgentControllers = newRows.map()
-            {
-                rowData ->
-                val agentController = VirtualAgentController(rowData.agentId)
-                existingAgents[agentController.agentId] = agentController
-                agentController.connect()
-                agentController
-            }
-            simulationWindowController.simulation.entityToCellsMap
-                .putAll(newAgentControllers.associate {it to emptySet<Simulation.Cell>()})
-
-            // resolve updated agents in the table update them in the simulation
-            val updatedRows = agentsTableView.items.filter {it.agentId in existingAgents.keys}
-            updatedRows.forEach()
-            {
-                rowData ->
-                val agentController = existingAgents[rowData.agentId]!!
-                // todo: instead of setting their belief state, should be revising instead!!
-                agentController.setBeliefState(rowData.problemInstance.initialBeliefState)
-                agentController.setBeliefRevisionStrategy(rowData.problemInstance.beliefRevisionStrategy)
-                agentController.setBehaviourDictionary(behaviouralDictionaryWindowController.behaviouralDictionaryTableView.items.map {it.proposition to it.behavior})
-                agentController.setObstacles(simulationWindowController.simulation.entityToCellsMap.filter {it.key is Obstacle}.flatMap {it.value}.toSet())
-                agentController.bodyColor = rowData.color
-
-                // setting the position and direction of the robot to the user-specified one if it exists
-                if (rowData.shouldJumpToInitialPosition)
+                val existingAgentIds = agentsTableView.items.map {it.agentId}.toSet()
+                agentControllers.filter {it.key !in existingAgentIds}.forEach()
                 {
-                    agentController.position = rowData.newPosition.let {Point2D(it.x.toDouble(),it.y.toDouble())}
-                    agentController.direction = rowData.newDirection.angle
+                    val (agentId,agentController) = it
+
+                    // remove the agent controller from the agentController map
+                    agentControllers.remove(agentId)
+
+                    // shutdown the agent controller
+                    agentController.shutdown()
+
+                    // detach listeners from the agent controller
+                    agentController.isConnected.observers.clear()
+
+                    // remove the agent controller from the simulation
+                    simulationWindowController.simulation.entityToCellsMap.remove(agentController)
                 }
             }
 
-            // automatically deactivite the "jump to initial position flag"
-            val newListItems = agentsTableView.items.map {it.copy(shouldJumpToInitialPosition = false)}
-            if (newListItems != agentsTableView.items)
+            // associate new agent controllers with entries in the table view
+            // that are not currently associated with any agent controller.
+            run()
             {
-                Platform.runLater()
+                agentsTableView.items.filter {it.agentId !in agentControllers.keys}.forEach()
                 {
-                    agentsTableView.items.setAll(newListItems)
+                    rowData ->
+
+                    // todo: instantiate either a virtual or actual robot controller based on row data...
+                    val agentController = VirtualAgentController()
+
+                    // add the new agent to the agentControllers map
+                    agentControllers += rowData.agentId to agentController
+
+                    // attach listeners to the agent controller
+                    agentController.isConnected.observers += Change.Observer.new()
+                    {
+                        Platform.runLater()
+                        {
+                            // if the row for this agent still exists, update it
+                            val itemIndex = agentsTableView.items.indexOfFirst {it.agentId == rowData.agentId}
+                            if (itemIndex != -1)
+                            {
+                                val selectedIndex = agentsTableView.selectionModel.selectedIndex
+                                agentsTableView.items[itemIndex] = agentsTableView.items[itemIndex]
+                                    .copy(isManuallyEdited = false,isConnected = it.newValue)
+                                if (selectedIndex != -1) agentsTableView.selectionModel.select(selectedIndex)
+                            }
+                        }
+                    }
+
+                    // upload necessary data to the agent controller
+                    agentController.bodyColor = rowData.color
+                    agentController.position = Point2D(
+                        rowData.newPosition.x.toDouble(),
+                        rowData.newPosition.y.toDouble())
+                    agentController.direction = rowData.newDirection.angle
+                    agentController.uploadBeliefState(rowData
+                        .problemInstance.initialBeliefState)
+                    agentController.uploadBeliefRevisionStrategy(rowData
+                        .problemInstance.beliefRevisionStrategy)
+                    agentController.uploadBehaviourDictionary(behaviouralDictionaryWindowController
+                        .behaviouralDictionaryTableView.items
+                        .map {it.proposition to it.behavior})
+                    agentController.uploadObstacles(simulationWindowController
+                        .simulation.entityToCellsMap
+                        .filter {it.key is Obstacle}
+                        .flatMap {it.value}.toSet())
+
+                    // add the agent controller to the simulation
+                    simulationWindowController.simulation.entityToCellsMap.put(agentController,emptySet())
+                }
+            }
+
+            // update existing agent controllers that correspond to an existing
+            // entry in the table view that have been manually modified by the
+            // user.
+            run()
+            {
+                agentsTableView.items.filter {it.isManuallyEdited}.forEach()
+                {
+                    rowData ->
+
+                    // unset the modified flag
+                    rowData.isManuallyEdited = false
+
+                    // get the corresponding agent controller. it must exist
+                    // because any non-existent agent controllers should
+                    // have been created in the previous run block above
+                    val agentController = agentControllers[rowData.agentId]!!
+
+                    // update agent controller from edited row data
+                    agentController.bodyColor = rowData.color
+                    agentController.uploadBeliefState(rowData
+                        .problemInstance.initialBeliefState)
+                    agentController.uploadBeliefRevisionStrategy(rowData
+                        .problemInstance.beliefRevisionStrategy)
+
+                    // setting the position and direction of the robot to
+                    // the user-specified one if it exists
+                    if (rowData.shouldJumpToPosition)
+                    {
+                        agentController.position = rowData.newPosition.let {Point2D(it.x.toDouble(),it.y.toDouble())}
+                        agentController.direction = rowData.newDirection.angle
+
+                        // unset flag
+                        rowData.shouldJumpToPosition = false
+                    }
                 }
             }
         })
@@ -485,6 +548,9 @@ class AgentsWindowController:Initializable
             {
                 title = "Save Input Data"
                 initialDirectory = File(Paths.get(".").toAbsolutePath().normalize().toString())
+                extensionFilters += FileChooser.ExtensionFilter("agents",".agents")
+                extensionFilters += FileChooser.ExtensionFilter("json",".json")
+                extensionFilters += FileChooser.ExtensionFilter("any","*")
             }
             .showSaveDialog(rootLayout.scene.window)
 
@@ -494,8 +560,7 @@ class AgentsWindowController:Initializable
             {
                 AgentsSaveFile(file).use()
                 {
-                    it.agents.clear()
-                    it.agents += agentsTableView.items
+                    it.agents = agentsTableView.items
                         .map {AgentsSaveFile.Agent(it.problemInstance,it.newPosition,it.newDirection,it.color)}
                 }
             }
@@ -517,6 +582,9 @@ class AgentsWindowController:Initializable
             {
                 title = "Load Input Data"
                 initialDirectory = File(Paths.get(".").toAbsolutePath().normalize().toString())
+                extensionFilters += FileChooser.ExtensionFilter("agents",".agents")
+                extensionFilters += FileChooser.ExtensionFilter("json",".json")
+                extensionFilters += FileChooser.ExtensionFilter("any","*")
             }
             .showOpenDialog(rootLayout.scene.window)
 
@@ -533,8 +601,7 @@ class AgentsWindowController:Initializable
 
                         // load agents from the file
                         val agents = it.agents
-                            .map {AgentsTableView.RowData(it.problemInstance,RevisionFunctionConfigPanel(),emptySet(),it.position,it.direction,true,it.color,agentId++)}
-                            .apply {forEach {it.revisionFunctionConfigPanel.setValuesFrom(it.problemInstance.beliefRevisionStrategy)}}
+                            .map {AgentsTableView.RowData(agentId++,false,it.problemInstance,emptySet(),it.color,it.position,it.direction,true,true)}
 
                         // try to reload from the file again if generated agent IDs are not unique
                         if (agents.map {it.agentId}.toSet().size != agents.size)
