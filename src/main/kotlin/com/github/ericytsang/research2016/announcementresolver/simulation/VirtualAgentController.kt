@@ -260,7 +260,7 @@ class VirtualAgentController:AgentController()
             override fun update(simulation:Simulation)
             {
                 // if planning is done, go to the next state
-                if (pathPlanningTask.isDone)
+                if (pathPlanningTask.isDone.value)
                 {
                     stateMachine.stateAccess.withLock()
                     {

@@ -1,7 +1,8 @@
 package com.github.ericytsang.research2016.announcementresolver.window
 
 import com.github.ericytsang.lib.collections.KeyedChange
-import com.github.ericytsang.lib.collections.KeylessChange
+import com.github.ericytsang.lib.concurrent.Future
+import com.github.ericytsang.lib.concurrent.future
 import com.github.ericytsang.lib.javafxutils.JavafxUtils
 import com.github.ericytsang.lib.oopatterns.Change
 import com.github.ericytsang.lib.oopatterns.addAndUpdate
@@ -30,6 +31,7 @@ import javafx.scene.Parent
 import javafx.scene.Scene
 import javafx.scene.control.Button
 import javafx.scene.control.CheckMenuItem
+import javafx.scene.control.MenuItem
 import javafx.scene.control.Label
 import javafx.stage.FileChooser
 import javafx.stage.Stage
@@ -137,12 +139,6 @@ class AgentsWindowController:Initializable
     @FXML private lateinit var findAnnouncementButton:Button
 
     /**
-     * thread used to calculate announcement. initialized to a thread to get rid
-     * of the need to check for null.
-     */
-    private var announcementFinderThread = thread {}
-
-    /**
      * window used by user to map variables to robot behaviours.
      */
     private val behaviouralDictionaryWindowController = BehaviouralDictionaryWindowController.new()
@@ -156,6 +152,31 @@ class AgentsWindowController:Initializable
      */
     private val agentControllers = LinkedHashMap<Double,AgentController>()
 
+    /**
+     * the future used to calculate the announcement to announce to agents.
+     */
+    private var announcementFinder:Future<Proposition?> = future<Proposition?> {throw IllegalStateException("no")}
+        set(value)
+        {
+            // unregister listeners (if any) from previous future
+            field.status.observers.clear()
+
+            // set the backing field to the given value
+            field = value
+
+            // add listeners to the new future
+            field.status.addAndUpdate(Change.Observer.new()
+            {
+                // set the announcement label text according to the status of the new future
+                announcementLabel.text = when(field.status.value)
+                {
+                    Future.Status.PENDING -> "finding announcement..."
+                    Future.Status.SUCCESS -> field.await()?.toDnf()?.toString() ?: "no announcement found..."
+                    Future.Status.FAILURE -> field.exception.value!!.message
+                }
+            })
+        }
+
     override fun initialize(location:URL?,resources:ResourceBundle?)
     {
         /*
@@ -167,7 +188,7 @@ class AgentsWindowController:Initializable
             while (true)
             {
                 Thread.sleep(500)
-                val threadIsAlive = announcementFinderThread.isAlive
+                val threadIsAlive = announcementFinder.workerThread.isAlive
                 val latch = CountDownLatch(1)
                 Platform.runLater()
                 {
@@ -427,7 +448,7 @@ class AgentsWindowController:Initializable
      */
     @FXML private fun cancelAnnouncementFinding()
     {
-        announcementFinderThread.interrupt()
+        announcementFinder.workerThread.interrupt()
     }
 
     /**
@@ -436,10 +457,9 @@ class AgentsWindowController:Initializable
     @FXML private fun beginAnnouncementFinding()
     {
         // display loading...
-        announcementLabel.text = "Finding announcement..."
         findAnnouncementButton.isDisable = true
 
-        announcementFinderThread = thread()
+        announcementFinder = future()
         {
             try
             {
@@ -454,30 +474,23 @@ class AgentsWindowController:Initializable
                     OrderedAnnouncementResolutionStrategy().resolve(problemInstances)
                 }
 
-                Platform.runLater()
-                {
-                    // display the announcement
-                    announcementLabel.text = announcement?.toDnf()?.toString()
-                        ?: "No announcement found"
-                }
-
                 // display the revised belief states
                 if (announcement != null)
                 {
                     val newListItems = agentsTableView.items
                         .map {it.copy(actualK = it.problemInstance.reviseBy(announcement))}
 
-                    for (i in newListItems.indices)
+                    Platform.runLater()
                     {
-                        agentsTableView.items[i] = newListItems[i]
+                        agentsTableView.items.setAll(newListItems)
                     }
-
-                    Platform.runLater {agentsTableView.refresh()}
                 }
+
+                return@future announcement
             }
             catch (ex:InterruptedException)
             {
-                Platform.runLater {announcementLabel.text = "Operation cancelled"}
+                throw RuntimeException("operation cancelled")
             }
             finally
             {
@@ -491,8 +504,13 @@ class AgentsWindowController:Initializable
      */
     @FXML private fun commitAnnouncement()
     {
-        if (agentsTableView.items.all {it.actualK.isNotEmpty()})
+        if (agentsTableView.items.all {it.actualK.isNotEmpty()} && announcementFinder.status.value == Future.Status.SUCCESS)
         {
+            agentControllers.values.forEach()
+            {
+                it.uploadSentenceForBeliefRevision(announcementFinder.await()!!)
+            }
+
             val newListItems = agentsTableView.items.map()
             {
                 existingRowData ->
@@ -500,12 +518,9 @@ class AgentsWindowController:Initializable
                 existingRowData.copy(problemInstance = newProblemInstance,actualK = emptySet())
             }
 
-            for (i in newListItems.indices)
-            {
-                agentsTableView.items[i] = newListItems[i]
-            }
-
-            agentsTableView.refresh()
+            val selectedIndex = agentsTableView.selectionModel.selectedIndex
+            agentsTableView.items.setAll(newListItems)
+            agentsTableView.selectionModel.select(selectedIndex)
         }
     }
 
