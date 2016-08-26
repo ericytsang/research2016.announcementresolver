@@ -1,0 +1,36 @@
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.canvas.Canvas?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.MenuBar?>
+<?import javafx.scene.control.Menu?>
+<?import javafx.scene.control.MenuItem?>
+<VBox
+    xmlns:fx="http://javafx.com/fxml"
+    fx:id="parentLayout"
+    fx:controller="com.github.ericytsang.research2016.announcementresolver.window.SimulatorWindowController"
+    prefWidth="600.0"
+    prefHeight="600.0">
+    <MenuBar>
+        <Menu
+            text="File">
+            <MenuItem
+                text="Close"
+                onAction="#closeWindow"/>
+        </Menu>
+        <Menu
+            text="Help">
+            <MenuItem
+                text="About"
+                onAction="#showHelpDialog"/>
+        </Menu>
+    </MenuBar>
+    <ScrollPane
+        pannable="true"
+        hvalue="0.5"
+        vvalue="0.5">
+        <Canvas
+            width="4000.0"
+            height="4000.0"
+            fx:id="canvas"/>
+    </ScrollPane>
+</VBox>
