@@ -23,6 +23,7 @@ class ObstacleTableView:EditableTableView<ObstacleTableView.RowData>()
 {
     init
     {
+        // constrain what walls are allowed to be added
         items = ArrayList<RowData>().let()
         {
             ConstrainedList(it).apply()
@@ -38,6 +39,7 @@ class ObstacleTableView:EditableTableView<ObstacleTableView.RowData>()
             }
         }.let {ObservableListWrapper(it)}
 
+        // add columns
         columns += TableColumn<RowData,String>().apply()
         {
             text = "x1"
@@ -71,6 +73,7 @@ class ObstacleTableView:EditableTableView<ObstacleTableView.RowData>()
             }
         }
 
+        // configure column resize policy
         columnResizePolicy = CONSTRAINED_RESIZE_POLICY
     }
 
