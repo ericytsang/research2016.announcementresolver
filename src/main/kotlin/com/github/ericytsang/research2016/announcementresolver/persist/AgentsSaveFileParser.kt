@@ -99,7 +99,7 @@ object AgentsSaveFileParser
             // parse the string as a JSONArray of JSONObjects
             .let {JSONArray(it)}.map {it as JSONObject}
             // convert JSONObjects into objects
-            .map {it.toObject()}
+            .map {it.toAgent()}
     }
 
     fun save(file:File,objects:List<Agent>)
@@ -144,7 +144,7 @@ object AgentsSaveFileParser
         }
     }
 
-    private fun JSONObject.toObject():Agent
+    private fun JSONObject.toAgent():Agent
     {
         val initialK:Set<Proposition> = getJSONArray("${jsonSchema.initialK}").map {Proposition.makeFrom(it.toString())}.toSet()
         val targetK:Proposition = getString("${jsonSchema.targetK}").let {Proposition.makeFrom(it)}

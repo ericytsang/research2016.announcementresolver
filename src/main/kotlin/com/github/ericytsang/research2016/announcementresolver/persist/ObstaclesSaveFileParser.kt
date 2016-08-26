@@ -17,13 +17,11 @@ object ObstaclesSaveFileParser
      */
     private object jsonSchema
     {
-
         /**
          * key to [JSONObject] containing coordinates of first end of wall.
          */
         object position1:Json.Schema()
         {
-
             /**
              * key to [Int] that is x coordinate of first end of wall.
              */
@@ -40,7 +38,6 @@ object ObstaclesSaveFileParser
          */
         object position2:Json.Schema()
         {
-
             /**
              * key to [Int] that is x coordinate of second end of wall.
              */
@@ -61,7 +58,7 @@ object ObstaclesSaveFileParser
             // parse the string as a JSONArray of JSONObjects
             .let {JSONArray(it)}.map {it as JSONObject}
             // convert JSONObjects into objects
-            .map {it.toObject()}
+            .map {it.toObstacle()}
     }
 
     fun save(file:File,objects:List<Obstacle>)
@@ -101,7 +98,7 @@ object ObstaclesSaveFileParser
         }
     }
 
-    private fun JSONObject.toObject():Obstacle
+    private fun JSONObject.toObstacle():Obstacle
     {
         val position1X = getJSONObject("${jsonSchema.position1}").getInt("${jsonSchema.position1.x}")
         val position1Y = getJSONObject("${jsonSchema.position1}").getInt("${jsonSchema.position1.y}")
