@@ -15,6 +15,24 @@ sealed class Behaviour
         }
     }
 
+    class Patrol(val waypoints:List<Guard>):Behaviour()
+    {
+        init
+        {
+            if (waypoints.size < 2)
+            {
+                throw IllegalArgumentException("please specify at least 2 waypoints for this behaviour")
+            }
+        }
+
+        override fun toString():String
+        {
+            return waypoints.toString()
+        }
+    }
+
+    class DoNothing():Behaviour()
+
     enum class CardinalDirection(val friendly:String,val angle:Double)
     {
         NORTH("North",270.0), EAST("East",0.0), SOUTH("South",90.0), WEST("West",180.0)

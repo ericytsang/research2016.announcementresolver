@@ -1,13 +1,16 @@
 package com.github.ericytsang.research2016.announcementresolver.guicomponent
 
+import com.github.ericytsang.lib.collections.ObservableList
 import com.github.ericytsang.lib.javafxutils.PolymorphicComboBox
 import com.github.ericytsang.lib.javafxutils.EditableTableView
+import com.github.ericytsang.lib.javafxutils.JavafxUtils
 import com.github.ericytsang.lib.javafxutils.ValidatableTextField
 import com.github.ericytsang.research2016.announcementresolver.simulation.Behaviour
 import com.github.ericytsang.research2016.beliefrevisor.gui.Dimens
 import com.github.ericytsang.research2016.propositionallogic.Proposition
 import com.github.ericytsang.research2016.propositionallogic.makeFrom
 import com.github.ericytsang.research2016.propositionallogic.toParsableString
+import com.sun.javafx.collections.ObservableListWrapper
 import javafx.beans.property.SimpleStringProperty
 import javafx.beans.value.ObservableValue
 import javafx.scene.Node
@@ -102,7 +105,11 @@ class BehavioralDictionaryTableView:EditableTableView<BehavioralDictionaryTableV
         {
             // configure control...
             spacing = Dimens.KEYLINE_SMALL.toDouble()
-            comboBox.items.addAll(WanderBehaviorOption(),GuardBehaviorOption())
+            comboBox.items.addAll(
+                DoNothingBehaviorOption(),
+                WanderBehaviorOption(),
+                GuardBehaviorOption(),
+                PatrolBehaviorOption())
 
             // set control value to reflect model data
             product = model?.behavior
@@ -123,6 +130,17 @@ class BehavioralDictionaryTableView:EditableTableView<BehavioralDictionaryTableV
                 children += Label("Behaviour:")
                 children += behaviorComboBox
             }
+        }
+
+        private class DoNothingBehaviorOption():PolymorphicComboBox.Option<Behaviour>
+        {
+            override val panel:Node? = null
+            override fun build() = Behaviour.DoNothing()
+            override fun parse(product:Behaviour)
+            {
+                product as Behaviour.DoNothing
+            }
+            override fun toString():String = "Do Nothing"
         }
 
         private class WanderBehaviorOption():PolymorphicComboBox.Option<Behaviour>
@@ -193,6 +211,113 @@ class BehavioralDictionaryTableView:EditableTableView<BehavioralDictionaryTableV
             }
 
             override fun toString():String = "Guard"
+        }
+
+        private class PatrolBehaviorOption():PolymorphicComboBox.Option<Behaviour>
+        {
+            override val panel = object:EditableTableView<Behaviour.Guard>()
+            {
+                private val DIALOG_TITLE_ADD:String = "Add New Waypoint"
+                private val DIALOG_TITLE_EDIT:String = "Edit Existing Waypoint"
+
+                init
+                {
+                    // add columns to the table view
+                    columns += TableColumn<Behaviour.Guard,String>().apply()
+                    {
+                        text = "x"
+                        cellValueFactory = Callback()
+                        {
+                            SimpleStringProperty(it.value.x.toString())
+                        }
+                    }
+                    columns += TableColumn<Behaviour.Guard,String>().apply()
+                    {
+                        text = "y"
+                        cellValueFactory = Callback()
+                        {
+                            SimpleStringProperty(it.value.y.toString())
+                        }
+                    }
+                    columns += TableColumn<Behaviour.Guard,String>().apply()
+                    {
+                        text = "direction"
+                        cellValueFactory = Callback()
+                        {
+                            SimpleStringProperty(it.value.direction.friendly)
+                        }
+                    }
+
+                    // set the column resize policy
+                    columnResizePolicy = CONSTRAINED_RESIZE_POLICY
+                }
+
+                override fun createOrUpdateItem(previousInput:Behaviour.Guard?):Behaviour.Guard?
+                {
+                    val inputDialog = InputDialog(previousInput)
+                    while (inputDialog.showAndWait().get() == ButtonType.OK)
+                    {
+                        try
+                        {
+                            // todo: better error messages
+
+                            val xPosition = inputDialog.xPositionTextField.text.toInt()
+                            val yPosition = inputDialog.yPositionTextField.text.toInt()
+                            val direction = inputDialog.directionComboBox.value
+
+                            return Behaviour.Guard(xPosition,yPosition,direction)
+                        }
+                        catch (ex:Exception)
+                        {
+                            JavafxUtils.showErrorDialog("Invalid Input","Invalid input format.",ex)
+                        }
+                    }
+                    return null
+                }
+
+                private inner class InputDialog(model:Behaviour.Guard?):Alert(AlertType.NONE)
+                {
+                    val xPositionTextField = ValidatableTextField.makeIntegerTextField()
+                        .apply {text = model?.x?.toString() ?: ""}
+                    val yPositionTextField = ValidatableTextField.makeIntegerTextField()
+                        .apply {text = model?.y?.toString() ?: ""}
+                    val directionComboBox = ComboBox<Behaviour.CardinalDirection>().apply()
+                    {
+                        items.addAll(Behaviour.CardinalDirection.values())
+                        value = model?.direction
+                    }
+
+                    init
+                    {
+                        isResizable = true
+                        title = if (model == null) DIALOG_TITLE_ADD else DIALOG_TITLE_EDIT
+                        headerText = " "
+                        dialogPane.content = VBox().apply()
+                        {
+                            children += Label("X position:")
+                            children += xPositionTextField
+                            children += Label("Y position:")
+                            children += yPositionTextField
+                            children += Label("Direction:")
+                            children += directionComboBox
+                        }
+                        buttonTypes.addAll(ButtonType.CANCEL,ButtonType.OK)
+                    }
+                }
+            }
+
+            override fun build():Behaviour.Patrol
+            {
+                return Behaviour.Patrol(panel.items.toList())
+            }
+
+            override fun parse(product:Behaviour)
+            {
+                product as Behaviour.Patrol
+                panel.items = ObservableListWrapper(product.waypoints.toMutableList())
+            }
+
+            override fun toString():String = "Patrol"
         }
     }
 }

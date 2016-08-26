@@ -91,8 +91,10 @@ class VirtualAgentController:AgentController()
         {
             aiStateMachine.value = when (behaviour)
             {
+                is Behaviour.DoNothing -> DoNothing()
                 is Behaviour.Wander -> Wander()
                 is Behaviour.Guard -> MoveTo(Simulation.Cell.getElseMake(behaviour.x,behaviour.y),behaviour.direction)
+                is Behaviour.Patrol -> Patrol(behaviour.waypoints)
                 null -> DoNothing()
             }
         }
@@ -154,6 +156,69 @@ class VirtualAgentController:AgentController()
         {
             return Behaviour.CardinalDirection.values().getRandom()
         }
+    }
+
+    private inner class Patrol(val waypoints:List<Behaviour.Guard>):AiState
+    {
+        val MILLIS_WAIT_AT_EACH_WAYPOINT:Long = 1000
+
+        val stateMachine = StateMachine<AiState>(Wait(0))
+
+        override val result:AiState.Status = AiState.Status.SUCCESS
+        override fun onEnter() = Unit
+        override fun onExit() = Unit
+        override fun update(simulation:Simulation)
+        {
+            stateMachine.value.update(simulation)
+
+            if (stateMachine.value.result == AiState.Status.SUCCESS)
+            {
+                stateMachine.stateAccess.withLock()
+                {
+                    when (stateMachine.value)
+                    {
+                        is Wait ->
+                        {
+                            val nextWaypoint = getNextWaypoint()
+                            stateMachine.value = MoveTo(
+                                Simulation.Cell.getElseMake(nextWaypoint.x,nextWaypoint.y),
+                                nextWaypoint.direction)
+                        }
+                        is MoveTo ->
+                        {
+                            stateMachine.value = Wait(MILLIS_WAIT_AT_EACH_WAYPOINT)
+                        }
+                    }
+                }
+            }
+        }
+
+        private var waypointIterator = emptyList<Behaviour.Guard>().iterator()
+
+        private fun getNextWaypoint():Behaviour.Guard
+        {
+            if (!waypointIterator.hasNext())
+            {
+                waypointIterator = waypoints.iterator()
+            }
+            return waypointIterator.next()
+        }
+    }
+
+    private inner class Wait(val millisToWait:Long):AiState
+    {
+        override var result:AiState.Status = AiState.Status.PENDING
+            private set
+        override fun onEnter()
+        {
+            thread()
+            {
+                Thread.sleep(millisToWait)
+                result = AiState.Status.SUCCESS
+            }
+        }
+        override fun onExit() = Unit
+        override fun update(simulation:Simulation) = Unit
     }
 
     /**
