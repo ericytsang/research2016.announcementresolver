@@ -1,6 +1,7 @@
 package com.github.ericytsang.research2016.announcementresolver.guicomponent
 
 import com.github.ericytsang.lib.javafxutils.EditableTableView
+import com.github.ericytsang.lib.javafxutils.JavafxUtils
 import com.github.ericytsang.lib.javafxutils.NamedValue
 import com.github.ericytsang.lib.javafxutils.ValidatableTextField
 import com.github.ericytsang.lib.simulation.Simulation
@@ -238,11 +239,7 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
             }
             catch (ex:Exception)
             {
-                val alert = Alert(Alert.AlertType.ERROR)
-                alert.title = "Invalid Input"
-                alert.headerText = "Invalid input format."
-                alert.contentText = ex.message
-                alert.showAndWait()
+                JavafxUtils.showErrorDialog("Invalid Input","Invalid input format.",ex)
             }
         }
         return null
