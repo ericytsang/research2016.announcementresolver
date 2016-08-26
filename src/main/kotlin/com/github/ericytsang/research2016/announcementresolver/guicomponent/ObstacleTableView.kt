@@ -58,8 +58,6 @@ class ObstacleTableView:EditableTableView<ObstacleTableView.RowData>()
             try
             {
                 // todo: better error messages
-
-                // todo: check that the cells are adjacent to one another...maybe can check in the init method of rowdata
                 return RowData(
                     Simulation.Cell.getElseMake(inputDialog.position1XTextField.text.toInt(),inputDialog.position1YTextField.text.toInt()),
                     Simulation.Cell.getElseMake(inputDialog.position2XTextField.text.toInt(),inputDialog.position2YTextField.text.toInt()))

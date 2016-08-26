@@ -302,7 +302,7 @@ class AgentsWindowController:Initializable
                 {
                     rowData ->
 
-                    // todo: instantiate either a virtual or actual robot controller based on row data...
+                    // todo: instantiate either a virtual or actual robot controller based on row data
                     val agentController = VirtualAgentController()
 
                     // add the new agent to the agentControllers map

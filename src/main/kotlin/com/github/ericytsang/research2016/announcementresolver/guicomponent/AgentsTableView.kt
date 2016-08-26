@@ -36,7 +36,6 @@ import javafx.util.Callback
  * allows the user to view and modify a collection of [AgentsTableView.RowData]
  * objects.
  */
-// todo: display connectivity status to agent
 class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
 {
     companion object
@@ -287,7 +286,7 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
          * true to make the agent controller update its agent with the
          * information in this instance.
          */
-        var isManuallyEdited:Boolean) //todo: get rid of the part that calls copy to change this value, and make it change it in-place instead
+        var isManuallyEdited:Boolean)
 
     /**
      * returns a set of all unique [Variable] instances in [items].
