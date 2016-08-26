@@ -72,11 +72,6 @@ class AgentsWindowController:Initializable
 
     /**
      * field is initialized by the JavaFx framework.
-     */
-    @FXML private lateinit var rootLayout:Parent
-
-    /**
-     * field is initialized by the JavaFx framework.
      *
      * [CheckMenuItem] that when clicked, calls [toggleDictionaryWindow].
      */
@@ -539,6 +534,7 @@ class AgentsWindowController:Initializable
             simulationWindowController.stage.show()
         }
     }
+
     /**
      * invoked by framework when the File > Save [MenuItem] is pressed.
      */
@@ -553,7 +549,7 @@ class AgentsWindowController:Initializable
                 extensionFilters += FileChooser.ExtensionFilter("json",".json")
                 extensionFilters += FileChooser.ExtensionFilter("any","*")
             }
-            .showSaveDialog(rootLayout.scene.window)
+            .showSaveDialog(stage.scene.window)
 
         if (file != null)
         {
@@ -587,7 +583,7 @@ class AgentsWindowController:Initializable
                 extensionFilters += FileChooser.ExtensionFilter("json",".json")
                 extensionFilters += FileChooser.ExtensionFilter("any","*")
             }
-            .showOpenDialog(rootLayout.scene.window)
+            .showOpenDialog(stage.scene.window)
 
         // if a file was chosen, load data from it
         if (file != null)

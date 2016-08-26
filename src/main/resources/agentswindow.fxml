@@ -11,7 +11,6 @@
 <?import javafx.scene.control.CheckMenuItem?>
 <VBox
     xmlns:fx="http://javafx.com/fxml"
-    fx:id="rootLayout"
     fx:controller="com.github.ericytsang.research2016.announcementresolver.window.AgentsWindowController"
     prefWidth="700.0"
     prefHeight="400.0">
