@@ -5,7 +5,7 @@ import com.github.ericytsang.lib.oopatterns.Change
 import com.github.ericytsang.lib.oopatterns.addAndUpdate
 import com.github.ericytsang.research2016.announcementresolver.guicomponent.AgentsTableView
 import com.github.ericytsang.research2016.announcementresolver.guicomponent.DisplayModeComboBox
-import com.github.ericytsang.research2016.announcementresolver.persist.AgentsSaveFile
+import com.github.ericytsang.research2016.announcementresolver.persist.AgentsSaveFileParser
 import com.github.ericytsang.research2016.announcementresolver.simulation.AgentController
 import com.github.ericytsang.research2016.announcementresolver.simulation.Obstacle
 import com.github.ericytsang.research2016.announcementresolver.simulation.VirtualAgentController
@@ -545,8 +545,8 @@ class AgentsWindowController:Initializable
             {
                 title = "Save Input Data"
                 initialDirectory = File(Paths.get(".").toAbsolutePath().normalize().toString())
-                extensionFilters += FileChooser.ExtensionFilter("agents",".agents")
-                extensionFilters += FileChooser.ExtensionFilter("json",".json")
+                extensionFilters += FileChooser.ExtensionFilter("agents","*.agents")
+                extensionFilters += FileChooser.ExtensionFilter("json","*.json")
                 extensionFilters += FileChooser.ExtensionFilter("any","*")
             }
             .showSaveDialog(stage.scene.window)
@@ -555,11 +555,9 @@ class AgentsWindowController:Initializable
         {
             try
             {
-                AgentsSaveFile(file).use()
-                {
-                    it.agents = agentsTableView.items
-                        .map {AgentsSaveFile.Agent(it.problemInstance,it.newPosition,it.newDirection,it.color)}
-                }
+                val agents = agentsTableView.items
+                    .map {AgentsSaveFileParser.Agent(it.problemInstance,it.newPosition,it.newDirection,it.color)}
+                AgentsSaveFileParser.save(file,agents)
             }
             catch (ex:Exception)
             {
@@ -579,8 +577,8 @@ class AgentsWindowController:Initializable
             {
                 title = "Load Input Data"
                 initialDirectory = File(Paths.get(".").toAbsolutePath().normalize().toString())
-                extensionFilters += FileChooser.ExtensionFilter("agents",".agents")
-                extensionFilters += FileChooser.ExtensionFilter("json",".json")
+                extensionFilters += FileChooser.ExtensionFilter("agents","*.agents")
+                extensionFilters += FileChooser.ExtensionFilter("json","*.json")
                 extensionFilters += FileChooser.ExtensionFilter("any","*")
             }
             .showOpenDialog(stage.scene.window)
@@ -590,27 +588,20 @@ class AgentsWindowController:Initializable
         {
             try
             {
-                AgentsSaveFile(file).use()
+                // load agents from the file
+                val parsedAgents = AgentsSaveFileParser.load(file)
+                var agentId = 0.0
+                val agents = parsedAgents
+                    .map {AgentsTableView.RowData(agentId++,false,it.problemInstance,emptySet(),it.color,it.position,it.direction,true,true)}
+
+                // try to reload from the file again if generated agent IDs are not unique
+                if (agents.map {it.agentId}.toSet().size != agents.size)
                 {
-                    for (i in 1..100)
-                    {
-                        var agentId = 0.0
-
-                        // load agents from the file
-                        val agents = it.agents
-                            .map {AgentsTableView.RowData(agentId++,false,it.problemInstance,emptySet(),it.color,it.position,it.direction,true,true)}
-
-                        // try to reload from the file again if generated agent IDs are not unique
-                        if (agents.map {it.agentId}.toSet().size != agents.size)
-                        {
-                            throw IllegalArgumentException("failed to generate unique agent IDs")
-                        }
-
-                        // add them to the table view
-                        agentsTableView.items.setAll(agents)
-                        return
-                    }
+                    throw IllegalArgumentException("failed to generate unique agent IDs for agents")
                 }
+
+                // add them to the table view
+                agentsTableView.items.setAll(agents)
             }
             catch (ex:Exception)
             {

@@ -24,8 +24,12 @@ import java.io.PrintWriter
 /**
  * Created by surpl on 8/24/2016.
  */
-class AgentsSaveFile(val file:File):Closeable
+object AgentsSaveFileParser
 {
+    /**
+     * the root node of all the json is a [JSONArray] of [JSONObject] elements
+     * that are formatted in the way described by [jsonSchema].
+     */
     private object jsonSchema
     {
         /**
@@ -87,26 +91,21 @@ class AgentsSaveFile(val file:File):Closeable
         }
     }
 
-    // initialize members from file data if possible
-    var agents:List<Agent> = if (file.exists())
+    fun load(file:File):List<Agent>
     {
-        file.inputStream()
+        return file.inputStream()
             // read file into a string
             .use {it.readBytes().let {String(it)}}
             // parse the string as a JSONArray of JSONObjects
             .let {JSONArray(it)}.map {it as JSONObject}
-            // convert JSONObjects into agents
-            .map {it.toAgent()}
-    }
-    else
-    {
-        emptyList()
+            // convert JSONObjects into objects
+            .map {it.toObject()}
     }
 
-    override fun close()
+    fun save(file:File,objects:List<Agent>)
     {
-        // convert agents into JSON
-        val json = agents
+        // convert objects into JSON
+        val json = objects
             .map {it.toJsonObject()}
             .let {JSONArray(it)}
             .toString(4)
@@ -145,7 +144,7 @@ class AgentsSaveFile(val file:File):Closeable
         }
     }
 
-    private fun JSONObject.toAgent():Agent
+    private fun JSONObject.toObject():Agent
     {
         val initialK:Set<Proposition> = getJSONArray("${jsonSchema.initialK}").map {Proposition.makeFrom(it.toString())}.toSet()
         val targetK:Proposition = getString("${jsonSchema.targetK}").let {Proposition.makeFrom(it)}
