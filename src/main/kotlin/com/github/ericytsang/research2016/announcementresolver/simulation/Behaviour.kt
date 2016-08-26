@@ -3,9 +3,8 @@ package com.github.ericytsang.research2016.announcementresolver.simulation
 sealed class Behaviour
 {
     class Wander():Behaviour()
-    {
-        override fun toString():String = "${javaClass.simpleName}()"
-    }
+
+    class DoNothing():Behaviour()
 
     class Guard(val x:Int,val y:Int,val direction:CardinalDirection):Behaviour()
     {
@@ -27,11 +26,11 @@ sealed class Behaviour
 
         override fun toString():String
         {
-            return waypoints.toString()
+            return "Patrol(waypoints=$waypoints)"
         }
     }
 
-    class DoNothing():Behaviour()
+    override fun toString():String = "${javaClass.simpleName}()"
 
     enum class CardinalDirection(val friendly:String,val angle:Double)
     {
