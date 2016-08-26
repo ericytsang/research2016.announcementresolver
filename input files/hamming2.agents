@@ -1,0 +1,32 @@
+[
+    {
+        "color": {
+            "r": 1,
+            "b": 0,
+            "g": 0
+        },
+        "position": {
+            "x": 0,
+            "y": 0
+        },
+        "direction": "EAST",
+        "initialK" : ["-a and b and c"],
+        "targetK" : "a and b and c",
+        "operator" : {"name" : "HAMMING_DISTANCE"},
+    },
+    {
+        "color": {
+            "r": 1,
+            "b": 1,
+            "g": 0
+        },
+        "position": {
+            "x": 3,
+            "y": 0
+        },
+        "direction": "EAST",
+        "initialK" : ["-a and -b and -c"],
+        "targetK" : "b and -c and (a or -a)",
+        "operator" : {"name" : "HAMMING_DISTANCE"},
+    }
+]

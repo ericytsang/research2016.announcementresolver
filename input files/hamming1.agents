@@ -1,0 +1,62 @@
+[
+    {
+        "color": {
+            "r": 0,
+            "b": 1,
+            "g": 1
+        },
+        "position": {
+            "x": 1,
+            "y": 0
+        },
+        "direction": "EAST",
+        "initialK" : ["-a and b and -c and -d"],
+        "targetK" : "-a and -b and c and -d",
+        "operator" : {"name" : "HAMMING_DISTANCE"},
+    },
+    {
+        "color": {
+            "r": 0,
+            "b": 0,
+            "g": 1
+        },
+        "position": {
+            "x": 1,
+            "y": 1
+        },
+        "direction": "EAST",
+        "initialK" : ["a and b and -c and -d"],
+        "targetK" : "a and -b and c and -d",
+        "operator" : {"name" : "HAMMING_DISTANCE"},
+    },
+    {
+        "color": {
+            "r": 1,
+            "b": 0,
+            "g": 1
+        },
+        "position": {
+            "x": -1,
+            "y": 0
+        },
+        "direction": "EAST",
+        "initialK" : ["-a and b and -c and d"],
+        "targetK" : "-a and -b and c and d",
+        "operator" : {"name" : "HAMMING_DISTANCE"},
+    },
+    {
+        "color": {
+            "r": 1,
+            "b": 1,
+            "g": 0
+        },
+        "position": {
+            "x": 1,
+            "y": -1
+        },
+        "direction": "EAST",
+        "initialK" : ["a and b and -c and d"],
+        "targetK" : "a and -b and c and d",
+        "operator" : {"name" : "HAMMING_DISTANCE"},
+    },
+]

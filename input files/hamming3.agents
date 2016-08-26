@@ -1,0 +1,32 @@
+[
+    {
+        "color": {
+            "r": 1,
+            "b": 1,
+            "g": 0
+        },
+        "position": {
+            "x": 1,
+            "y": 0
+        },
+        "direction": "EAST",
+        "initialK" : ["patrol and breach"],
+        "targetK" : "patrol",
+        "operator" : {"name" : "HAMMING_DISTANCE"},
+    },
+    {
+            "color": {
+            "r": 1,
+            "b": 0,
+            "g": 0
+        },
+        "position": {
+            "x": 0,
+            "y": 0
+        },
+        "direction": "EAST",
+        "initialK" : ["-patrol and breach"],
+        "targetK" : "patrol",
+        "operator" : {"name" : "HAMMING_DISTANCE"},
+    },
+]
