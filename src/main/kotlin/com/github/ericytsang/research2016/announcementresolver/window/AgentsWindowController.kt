@@ -2,6 +2,7 @@ package com.github.ericytsang.research2016.announcementresolver.window
 
 import com.github.ericytsang.lib.javafxutils.JavafxUtils
 import com.github.ericytsang.lib.oopatterns.Change
+import com.github.ericytsang.lib.oopatterns.addAndUpdate
 import com.github.ericytsang.research2016.announcementresolver.guicomponent.AgentsTableView
 import com.github.ericytsang.research2016.announcementresolver.guicomponent.DisplayModeComboBox
 import com.github.ericytsang.research2016.announcementresolver.persist.AgentsSaveFile
@@ -309,7 +310,7 @@ class AgentsWindowController:Initializable
                     agentControllers += rowData.agentId to agentController
 
                     // attach listeners to the agent controller
-                    agentController.isConnected.observers += Change.Observer.new()
+                    agentController.isConnected.addAndUpdate(Change.Observer.new()
                     {
                         Platform.runLater()
                         {
@@ -323,7 +324,7 @@ class AgentsWindowController:Initializable
                                 if (selectedIndex != -1) agentsTableView.selectionModel.select(selectedIndex)
                             }
                         }
-                    }
+                    })
 
                     // upload necessary data to the agent controller
                     agentController.bodyColor = rowData.color
