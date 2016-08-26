@@ -1,8 +1,11 @@
 package com.github.ericytsang.research2016.announcementresolver.window
 
+import com.github.ericytsang.lib.collections.KeyedChange
+import com.github.ericytsang.lib.collections.KeylessChange
 import com.github.ericytsang.lib.javafxutils.JavafxUtils
 import com.github.ericytsang.lib.oopatterns.Change
 import com.github.ericytsang.lib.oopatterns.addAndUpdate
+import com.github.ericytsang.lib.simulation.Simulation
 import com.github.ericytsang.research2016.announcementresolver.guicomponent.AgentsTableView
 import com.github.ericytsang.research2016.announcementresolver.guicomponent.DisplayModeComboBox
 import com.github.ericytsang.research2016.announcementresolver.persist.AgentsSaveFileParser
@@ -189,21 +192,6 @@ class AgentsWindowController:Initializable
         })
 
         /*
-         * when the obstacleWindowController's tableview items are changed,
-         * update the obstacles in the agents as well
-         */
-        obstacleWindowController.obstacleTableView.items.addListener(InvalidationListener()
-        {
-            agentControllers.values.forEach()
-            {
-                it.uploadObstacles(simulationWindowController
-                    .simulation.entityToCellsMap
-                    .filter {it.key is Obstacle}
-                    .flatMap {it.value}.toSet())
-            }
-        })
-
-        /*
          * [toggleDictionaryWindowCheckMenuItem] displays a check mark beside
          * itself when [behaviouralDictionaryWindow] is showing; no check mark is displayed
          * otherwise.
@@ -258,8 +246,33 @@ class AgentsWindowController:Initializable
             }
 
             simulationWindowController.simulation.entityToCellsMap
-                .putAll(obstacleWindowController.obstacleTableView.items.associate {Wall(it.cell1,it.cell2) to setOf(it.cell1,it.cell2)})
+                .putAll(obstacleWindowController.obstacleTableView.items.associate {Wall(it.cell1,it.cell2) to emptySet<Simulation.Cell>()})
         })
+
+        /*
+         * when obstacles in the simulation change, upload the information to
+         * the agents.
+         */
+        run()
+        {
+            var knownOccupiedCells = emptySet<Simulation.Cell>()
+            simulationWindowController.simulation.entityToCellsMap.observers += KeyedChange.Observer.new()
+            {
+                val occupiedCells = simulationWindowController
+                    .simulation.entityToCellsMap
+                    .filter {it.key is Obstacle}
+                    .flatMap {it.value}.toSet()
+
+                if (occupiedCells != knownOccupiedCells)
+                {
+                    knownOccupiedCells = occupiedCells
+                    agentControllers.values.forEach()
+                    {
+                        it.uploadObstacles(occupiedCells)
+                    }
+                }
+            }
+        }
 
         /*
          * when the agent table view is modified, update the corresponding
