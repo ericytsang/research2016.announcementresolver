@@ -8,6 +8,7 @@ import com.github.ericytsang.lib.oopatterns.addAndUpdate
 import com.github.ericytsang.lib.simulation.Simulation
 import com.github.ericytsang.research2016.announcementresolver.guicomponent.AgentsTableView
 import com.github.ericytsang.research2016.announcementresolver.guicomponent.DisplayModeComboBox
+import com.github.ericytsang.research2016.announcementresolver.guicomponent.ObstacleTableView
 import com.github.ericytsang.research2016.announcementresolver.persist.AgentsSaveFileParser
 import com.github.ericytsang.research2016.announcementresolver.simulation.AgentController
 import com.github.ericytsang.research2016.announcementresolver.simulation.Obstacle
@@ -394,6 +395,13 @@ class AgentsWindowController:Initializable
                 }
             }
         })
+
+        // add some default walls about the simulation to prevent agents from leaving
+        obstacleWindowController.obstacleTableView.items.addAll(
+            ObstacleTableView.RowData(Simulation.Cell.getElseMake(8,8),Simulation.Cell.getElseMake(-8,8)),
+            ObstacleTableView.RowData(Simulation.Cell.getElseMake(8,8),Simulation.Cell.getElseMake(8,-8)),
+            ObstacleTableView.RowData(Simulation.Cell.getElseMake(-8,-8),Simulation.Cell.getElseMake(-8,8)),
+            ObstacleTableView.RowData(Simulation.Cell.getElseMake(-8,-8),Simulation.Cell.getElseMake(8,-8)))
     }
 
     fun hideAllPeripheralWindows()
