@@ -62,7 +62,7 @@ class VirtualAgentController:AgentController()
 
     override fun update(simulation:Simulation)
     {
-        aiStateMachine.value.update()
+        aiStateMachine.value.update(simulation)
     }
 
     private var beliefState:Set<Proposition> = emptySet()
@@ -80,11 +80,6 @@ class VirtualAgentController:AgentController()
         }
 
     private var obstacles:Set<Simulation.Cell> = emptySet()
-        set(value)
-        {
-            field = value
-            refreshBehaviour()
-        }
 
     private var beliefRevisionStrategy:BeliefRevisionStrategy = ComparatorBeliefRevisionStrategy({HammingDistanceComparator(it)})
 
@@ -107,16 +102,21 @@ class VirtualAgentController:AgentController()
 
     private interface AiState:StateMachine.BaseState
     {
-        fun update()
+        fun update(simulation:Simulation)
+        val result:Status
+
+        enum class Status
+        {PENDING,SUCCESS,FAIL}
     }
 
     // todo: add patrol state
 
     private inner class DoNothing:AiState
     {
+        override val result:AiState.Status = AiState.Status.SUCCESS
         override fun onEnter() = Unit
         override fun onExit() = Unit
-        override fun update() = Unit
+        override fun update(simulation:Simulation) = Unit
     }
 
     // todo: add parameters to wander so can specify local wander or something
@@ -127,11 +127,12 @@ class VirtualAgentController:AgentController()
 
         val stateMachine = StateMachine(MoveTo(randomCell(),randomDirection()))
 
+        override val result:AiState.Status = AiState.Status.SUCCESS
         override fun onEnter() = Unit
         override fun onExit() = Unit
-        override fun update()
+        override fun update(simulation:Simulation)
         {
-            stateMachine.value.update()
+            stateMachine.value.update(simulation)
 
             if (stateMachine.value.stateMachine.value is MoveTo.Done)
             {
@@ -163,9 +164,11 @@ class VirtualAgentController:AgentController()
     {
         val stateMachine = StateMachine<AiState>(PlanRoute())
 
+        override var result:AiState.Status = AiState.Status.PENDING
+            private set
         override fun onEnter() = Unit
         override fun onExit() = Unit
-        override fun update() = stateMachine.value.update()
+        override fun update(simulation:Simulation) = stateMachine.value.update(simulation)
 
         inner class PlanRoute():AiState
         {
@@ -186,9 +189,10 @@ class VirtualAgentController:AgentController()
                 AStar.run(startCell,destinationAStarCell,maxIterations.toInt())
             }
 
+            override var result:AiState.Status = AiState.Status.PENDING
             override fun onEnter() = Unit
             override fun onExit() = Unit
-            override fun update()
+            override fun update(simulation:Simulation)
             {
                 // if planning is done, go to the next state
                 if (pathPlanningTask.isDone)
@@ -206,9 +210,10 @@ class VirtualAgentController:AgentController()
 
         inner class FollowRoute(private var path:List<Simulation.Cell>):AiState
         {
+            override var result:AiState.Status = AiState.Status.PENDING
             override fun onEnter() = Unit
             override fun onExit() = Unit
-            override fun update()
+            override fun update(simulation:Simulation)
             {
                 // if there is no destination to move to, move to the next state
                 if (path.isEmpty())
@@ -216,6 +221,16 @@ class VirtualAgentController:AgentController()
                     stateMachine.stateAccess.withLock()
                     {
                         stateMachine.value = AlignDirection()
+                    }
+                    return
+                }
+
+                // if the path turns out to be obstructed, replan the path
+                if (simulation.cellToEntitiesMap[path.first()]?.any {it is Obstacle} == true)
+                {
+                    stateMachine.stateAccess.withLock()
+                    {
+                        stateMachine.value = PlanRoute()
                     }
                     return
                 }
@@ -256,9 +271,10 @@ class VirtualAgentController:AgentController()
 
         inner class AlignDirection():AiState
         {
+            override var result:AiState.Status = AiState.Status.PENDING
             override fun onEnter() = Unit
             override fun onExit() = Unit
-            override fun update()
+            override fun update(simulation:Simulation)
             {
                 // turn towards the destination this update
                 val deltaDirection = angleDifference(direction,targetDirection.angle).coerceIn(-TURN_MAX_SPEED,TURN_MAX_SPEED)
@@ -282,9 +298,13 @@ class VirtualAgentController:AgentController()
 
         inner class Done():AiState
         {
-            override fun onEnter() = Unit
+            override var result:AiState.Status = AiState.Status.PENDING
+            override fun onEnter()
+            {
+                this@MoveTo.result = AiState.Status.SUCCESS
+            }
             override fun onExit() = Unit
-            override fun update() = Unit
+            override fun update(simulation:Simulation) = Unit
         }
     }
 
