@@ -2,6 +2,7 @@ package com.github.ericytsang.lib.concurrent
 
 import com.github.ericytsang.lib.oopatterns.BackedField
 import com.github.ericytsang.lib.oopatterns.Change
+import java.util.concurrent.CountDownLatch
 import kotlin.concurrent.thread
 
 fun <R> future(block:()->R) = Future(block)
@@ -9,6 +10,8 @@ fun <R> future(block:()->R) = Future(block)
 class Future<out R> internal constructor(val block:()->R)
 {
     private var result:()->R = {throw IllegalStateException("uninitialized")}
+
+    private val releasedOnResultSet = CountDownLatch(1)
 
     val exception:Change.Observable<Exception?> get() = _exception
     private val _exception = BackedField<Exception?>(null)
@@ -24,11 +27,13 @@ class Future<out R> internal constructor(val block:()->R)
         try
         {
             result = block().let {{it}}
+            releasedOnResultSet.countDown()
             _status.value = Status.SUCCESS
         }
         catch (ex:Exception)
         {
             result = {throw ex}
+            releasedOnResultSet.countDown()
             _exception.value = ex
             _status.value = Status.FAILURE
         }
@@ -40,7 +45,7 @@ class Future<out R> internal constructor(val block:()->R)
 
     fun await():R
     {
-        workerThread.join()
+        releasedOnResultSet.await()
         return result()
     }
 

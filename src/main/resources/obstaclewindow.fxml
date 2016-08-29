@@ -22,12 +22,12 @@
                 text="Close"
                 onAction="#closeWindow"/>
         </Menu>
-        <Menu
+        <!--<Menu
             text="Help">
             <MenuItem
                 text="About"
                 onAction="#showHelpDialog"/>
-        </Menu>
+        </Menu>-->
     </MenuBar>
     <VBox
         VBox.vgrow="ALWAYS"

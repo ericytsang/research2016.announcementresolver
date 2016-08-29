@@ -168,7 +168,7 @@ class AgentsWindowController:Initializable
             field.status.addAndUpdate(Change.Observer.new()
             {
                 // set the announcement label text according to the status of the new future
-                val labelText = when(field.status.value)
+                val labelText = when(it.newValue)
                 {
                     Future.Status.PENDING -> "finding announcement..."
                     Future.Status.SUCCESS -> field.await()?.toDnf()?.toString() ?: "no announcement found..."
@@ -352,7 +352,7 @@ class AgentsWindowController:Initializable
                             {
                                 val selectedIndex = agentsTableView.selectionModel.selectedIndex
                                 agentsTableView.items[itemIndex] = agentsTableView.items[itemIndex]
-                                    .copy(isManuallyEdited = false,isConnected = it.newValue)
+                                    .copy(isConnected = it.newValue)
                                 if (selectedIndex != -1) agentsTableView.selectionModel.select(selectedIndex)
                             }
                         }
@@ -386,12 +386,9 @@ class AgentsWindowController:Initializable
             // user.
             run()
             {
-                agentsTableView.items.filter {it.isManuallyEdited}.forEach()
+                agentsTableView.items.forEach()
                 {
                     rowData ->
-
-                    // unset the modified flag
-                    rowData.isManuallyEdited = false
 
                     // get the corresponding agent controller. it must exist
                     // because any non-existent agent controllers should
@@ -463,7 +460,7 @@ class AgentsWindowController:Initializable
 
         announcementFinder = future()
         {
-            try
+            return@future try
             {
                 // resolve the announcement
                 val problemInstances = agentsTableView.items.map {it.problemInstance}
@@ -488,7 +485,7 @@ class AgentsWindowController:Initializable
                     }
                 }
 
-                return@future announcement
+                announcement
             }
             catch (ex:InterruptedException)
             {
@@ -629,7 +626,7 @@ class AgentsWindowController:Initializable
                 // load agents from the file
                 val parsedAgents = AgentsSaveFileParser.load(file)
                 val agents = parsedAgents
-                    .map {AgentsTableView.RowData(Math.random(),false,it.problemInstance,emptySet(),it.color,it.position,it.direction,true,true)}
+                    .map {AgentsTableView.RowData(Math.random(),false,it.problemInstance,emptySet(),it.color,it.position,it.direction,true)}
 
                 // try to reload from the file again if generated agent IDs are not unique
                 if (agents.map {it.agentId}.toSet().size != agents.size)

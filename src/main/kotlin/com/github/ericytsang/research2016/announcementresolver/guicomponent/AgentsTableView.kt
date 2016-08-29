@@ -45,6 +45,7 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
          * names of columns in the table view.
          */
         private const val COLUMN_NAME_CONNECTIVITY:String = "Online"
+        private const val COLUMN_NAME_COLOR:String = "Color"
         private const val COLUMN_NAME_CURRENT_K:String = "Current belief state"
         private const val COLUMN_NAME_TARGET_K:String = "Target belief state"
         private const val COLUMN_NAME_BELIEF_REVISION_OPERATOR:String = "Belief revision operator"
@@ -146,6 +147,43 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
         }
         columns += TableColumn<RowData,String>().apply()
         {
+            text = COLUMN_NAME_COLOR
+            cellFactory = Callback()
+            {
+                object:TableCell<RowData,String>()
+                {
+                    override fun updateItem(item:String?,empty:Boolean)
+                    {
+                        super.updateItem(item,empty)
+
+                        if (empty || item == null)
+                        {
+                            text = null
+                            graphic = null
+                        }
+                        else
+                        {
+                            text = item.toString()
+                        }
+
+                        val color = (tableRow.item as RowData?)?.color?.deriveColor(0.0,1.0,1.0,0.75)
+                        when(color)
+                        {
+                            null ->
+                            {
+                                background = null
+                            }
+                            else ->
+                            {
+                                background = Background(BackgroundFill(color,CornerRadii.EMPTY,Insets.EMPTY))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        columns += TableColumn<RowData,String>().apply()
+        {
             text = COLUMN_NAME_CURRENT_K
             cellValueFactory = Callback()
             {
@@ -205,16 +243,23 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
                 val targetK = Proposition.makeFrom(inputDialog.targetKTextField.text)
                 val beliefRevisionStrategy = inputDialog.operatorInputPane.beliefRevisionStrategy ?: throw IllegalArgumentException("A belief revision operation must be specified")
 
-                // get the user's positioning and direction input. either the x
-                // position, y position and direction input are all there, or
-                // they are all not there...
+                // get the user's positioning and direction input
                 val newPosition = Simulation.Cell.getElseMake(
                     inputDialog.initialXPositionTextField.text.toInt(),
                     inputDialog.initialYPositionTextField.text.toInt())
                 val newDirection = inputDialog.directionComboBox.value.value
 
-                val robotColor = inputDialog.colorComboBox.value.value
                 val shouldJumpToPosition = inputDialog.jumpToInitialPositionCheckBox.isSelected
+
+                // the color of the robot is the one entered into the color
+                // input.
+                val robotColor = inputDialog.colorComboBox.value.value
+
+                // whether or not the agent controller is connected to the
+                // remote agent. if this is for creating a new entry, then the
+                // agent controller should be false...adopt the previous input's
+                // connectivity value otherwise.
+                val isConnected = previousInput?.isConnected ?: false
 
                 // try to use the row id from the previous input...if it doesn't
                 // exist, try to generate a new one that hopefully will not
@@ -233,9 +278,9 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
                 }
 
                 // done parsing...construct and return the row data object
-                return RowData(robotId,false,
+                return RowData(robotId,isConnected,
                     AnnouncementResolutionStrategy.ProblemInstance(initialK,targetK,beliefRevisionStrategy),
-                    emptySet(),robotColor,newPosition,newDirection,shouldJumpToPosition,true)
+                    emptySet(),robotColor,newPosition,newDirection,shouldJumpToPosition)
             }
             catch (ex:Exception)
             {
@@ -277,13 +322,7 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
          * set to true to make the agent controller set the position and
          * direction of the agent to [newPosition] and [newDirection] respectively.
          */
-        var shouldJumpToPosition:Boolean,
-
-        /**
-         * true to make the agent controller update its agent with the
-         * information in this instance.
-         */
-        var isManuallyEdited:Boolean)
+        var shouldJumpToPosition:Boolean)
 
     /**
      * returns a set of all unique [Variable] instances in [items].
@@ -372,6 +411,8 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
                 children += initialKTextField
                 children += Label(DIALOG_LABEL_TARGET_K)
                 children += targetKTextField
+                children += Label(DIALOG_LABEL_BELIEF_REVISION_OPERATOR)
+                children += operatorInputPane
                 children += Label(DIALOG_LABEL_COLOR)
                 children += colorComboBox
                 children += Label(DIALOG_LABEL_SHOULD_JUMP)
@@ -382,8 +423,6 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
                 children += initialYPositionTextField
                 children += Label(DIALOG_LABEL_JUMP_DIRECTION)
                 children += directionComboBox
-                children += Label(DIALOG_LABEL_BELIEF_REVISION_OPERATOR)
-                children += operatorInputPane
             }
             buttonTypes.addAll(ButtonType.CANCEL,ButtonType.OK)
         }

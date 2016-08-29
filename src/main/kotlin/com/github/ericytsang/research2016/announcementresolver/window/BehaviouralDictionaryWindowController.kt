@@ -21,7 +21,7 @@ class BehaviouralDictionaryWindowController
 {
     companion object
     {
-        private const val WINDOW_TITLE = "Behavioural Dictionary"
+        private const val WINDOW_TITLE = "Behaviour Dictionary"
 
         fun new():BehaviouralDictionaryWindowController
         {

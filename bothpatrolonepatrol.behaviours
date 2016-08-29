@@ -1,0 +1,49 @@
+[
+    {
+        "proposition": "patrol and yellow",
+        "behaviour": {
+            "name": "PATROL",
+            "waypoints": [
+                {
+                    "x": 5,
+                    "y": 0,
+                    "direction": "NORTH"
+                },
+                {
+                    "x": -5,
+                    "y": 0,
+                    "direction": "NORTH"
+                }
+            ]
+        }
+    },
+    {
+        "proposition": "patrol and red",
+        "behaviour": {
+            "name": "PATROL",
+            "waypoints": [
+                {
+                    "x": -5,
+                    "y": 1,
+                    "direction": "NORTH"
+                },
+                {
+                    "x": 5,
+                    "y": 1,
+                    "direction": "NORTH"
+                }
+            ]
+        }
+    },
+    {
+        "proposition": "1",
+        "behaviour": {
+            "guard": {
+                "x": 0,
+                "y": 2,
+                "direction": "NORTH"
+            },
+            "name": "GUARD"
+        }
+    }
+]

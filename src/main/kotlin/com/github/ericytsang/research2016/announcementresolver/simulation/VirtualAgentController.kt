@@ -37,22 +37,34 @@ class VirtualAgentController:AgentController()
 
     override fun uploadBeliefState(beliefState:Set<Proposition>)
     {
-        this.beliefState = beliefState
+        if (this.beliefState != beliefState)
+        {
+            this.beliefState = beliefState
+        }
     }
 
     override fun uploadBeliefRevisionStrategy(beliefRevisionStrategy:BeliefRevisionStrategy)
     {
-        this.beliefRevisionStrategy = beliefRevisionStrategy
+        if (this.beliefRevisionStrategy != beliefRevisionStrategy)
+        {
+            this.beliefRevisionStrategy = beliefRevisionStrategy
+        }
     }
 
     override fun uploadBehaviourDictionary(behaviourDictionary:List<Pair<Proposition,Behaviour>>)
     {
-        this.behaviourDictionary = behaviourDictionary
+        if (this.behaviourDictionary != behaviourDictionary)
+        {
+            this.behaviourDictionary = behaviourDictionary
+        }
     }
 
     override fun uploadObstacles(obstacles:Set<Simulation.Cell>)
     {
-        this.obstacles = obstacles
+        if (this.obstacles != obstacles)
+        {
+            this.obstacles = obstacles
+        }
     }
 
     override fun uploadSentenceForBeliefRevision(sentence:Proposition)
@@ -89,13 +101,17 @@ class VirtualAgentController:AgentController()
         val behaviour = behaviourDictionary.find {beliefState isSubsetOf it.first}?.second
         aiStateMachine.stateAccess.withLock()
         {
-            aiStateMachine.value = when (behaviour)
+            val tentativeValue = when (behaviour)
             {
                 is Behaviour.DoNothing -> DoNothing()
                 is Behaviour.Wander -> Wander()
                 is Behaviour.Guard -> MoveTo(Simulation.Cell.getElseMake(behaviour.x,behaviour.y),behaviour.direction)
                 is Behaviour.Patrol -> Patrol(behaviour.waypoints)
                 null -> DoNothing()
+            }
+            if (tentativeValue != aiStateMachine.value)
+            {
+                aiStateMachine.value = tentativeValue
             }
         }
     }
@@ -106,6 +122,8 @@ class VirtualAgentController:AgentController()
     {
         fun update(simulation:Simulation)
         val result:Status
+        override fun hashCode():Int
+        override fun equals(other:Any?):Boolean
 
         enum class Status
         {PENDING,SUCCESS,FAIL}
@@ -119,6 +137,8 @@ class VirtualAgentController:AgentController()
         override fun onEnter() = Unit
         override fun onExit() = Unit
         override fun update(simulation:Simulation) = Unit
+        override fun hashCode():Int = 0
+        override fun equals(other:Any?):Boolean = other is DoNothing
     }
 
     // todo: add parameters to wander so can specify local wander or something
@@ -136,7 +156,7 @@ class VirtualAgentController:AgentController()
         {
             stateMachine.value.update(simulation)
 
-            if (stateMachine.value.stateMachine.value is MoveTo.Done)
+            if (stateMachine.value.result == AiState.Status.SUCCESS)
             {
                 stateMachine.stateAccess.withLock()
                 {
@@ -144,6 +164,8 @@ class VirtualAgentController:AgentController()
                 }
             }
         }
+        override fun hashCode():Int = 0
+        override fun equals(other:Any?):Boolean = other is Wander
 
         private fun randomCell():Simulation.Cell
         {
@@ -192,6 +214,12 @@ class VirtualAgentController:AgentController()
                 }
             }
         }
+        override fun hashCode():Int = waypoints.hashCode()
+        override fun equals(other:Any?):Boolean
+        {
+            return other is Patrol &&
+                other.waypoints == waypoints
+        }
 
         private var waypointIterator = emptyList<Behaviour.Guard>().iterator()
 
@@ -219,6 +247,12 @@ class VirtualAgentController:AgentController()
         }
         override fun onExit() = Unit
         override fun update(simulation:Simulation) = Unit
+        override fun hashCode():Int = millisToWait.toInt()
+        override fun equals(other:Any?):Boolean
+        {
+            return other is Wait &&
+                other.millisToWait == millisToWait
+        }
     }
 
     /**
@@ -234,8 +268,15 @@ class VirtualAgentController:AgentController()
         override fun onEnter() = Unit
         override fun onExit() = Unit
         override fun update(simulation:Simulation) = stateMachine.value.update(simulation)
+        override fun hashCode():Int = targetCell.hashCode()+targetDirection.hashCode()
+        override fun equals(other:Any?):Boolean
+        {
+            return other is MoveTo &&
+                other.targetCell == targetCell &&
+                other.targetDirection == targetDirection
+        }
 
-        inner class PlanRoute():AiState
+        private inner class PlanRoute():AiState
         {
             val MIN_WORK = 1000
             val WORK_MULTIPLIER = 50.0
@@ -271,9 +312,11 @@ class VirtualAgentController:AgentController()
                     }
                 }
             }
+            override fun hashCode():Int = 0
+            override fun equals(other:Any?):Boolean = false
         }
 
-        inner class FollowRoute(private var path:List<Simulation.Cell>):AiState
+        private inner class FollowRoute(private var path:List<Simulation.Cell>):AiState
         {
             override var result:AiState.Status = AiState.Status.PENDING
             override fun onEnter() = Unit
@@ -332,9 +375,11 @@ class VirtualAgentController:AgentController()
                     path = path.drop(1)
                 }
             }
+            override fun hashCode():Int = 0
+            override fun equals(other:Any?):Boolean = false
         }
 
-        inner class AlignDirection():AiState
+        private inner class AlignDirection():AiState
         {
             override var result:AiState.Status = AiState.Status.PENDING
             override fun onEnter() = Unit
@@ -359,9 +404,11 @@ class VirtualAgentController:AgentController()
                     }
                 }
             }
+            override fun hashCode():Int = 0
+            override fun equals(other:Any?):Boolean = false
         }
 
-        inner class Done():AiState
+        private inner class Done():AiState
         {
             override var result:AiState.Status = AiState.Status.PENDING
             override fun onEnter()
@@ -370,6 +417,8 @@ class VirtualAgentController:AgentController()
             }
             override fun onExit() = Unit
             override fun update(simulation:Simulation) = Unit
+            override fun hashCode():Int = 0
+            override fun equals(other:Any?):Boolean = false
         }
     }
 
