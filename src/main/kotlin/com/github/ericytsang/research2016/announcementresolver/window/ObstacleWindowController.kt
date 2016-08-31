@@ -16,7 +16,6 @@ import java.nio.file.Paths
 /**
  * Created by surpl on 8/14/2016.
  */
-// todo: save and load
 // todo: add help message
 class ObstacleWindowController
 {

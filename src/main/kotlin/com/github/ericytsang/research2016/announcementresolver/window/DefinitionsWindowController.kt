@@ -1,8 +1,8 @@
 package com.github.ericytsang.research2016.announcementresolver.window
 
 import com.github.ericytsang.lib.javafxutils.JavafxUtils
-import com.github.ericytsang.research2016.announcementresolver.guicomponent.BehavioralDictionaryTableView
-import com.github.ericytsang.research2016.announcementresolver.persist.BehaviouralDictionarySaveFileParser
+import com.github.ericytsang.research2016.announcementresolver.guicomponent.DefinitionsTableView
+import com.github.ericytsang.research2016.announcementresolver.persist.DefinitionsSaveFileParser
 import javafx.fxml.FXML
 import javafx.fxml.FXMLLoader
 import javafx.scene.Parent
@@ -15,19 +15,18 @@ import java.nio.file.Paths
 /**
  * Created by surpl on 8/14/2016.
  */
-// todo: save and load
 // todo: add help message
-class BehaviouralDictionaryWindowController
+class DefinitionsWindowController
 {
     companion object
     {
-        private const val WINDOW_TITLE = "Behaviour Dictionary"
+        private const val WINDOW_TITLE = "Definitions"
 
-        fun new():BehaviouralDictionaryWindowController
+        fun new():DefinitionsWindowController
         {
-            val loader = FXMLLoader(BehaviouralDictionaryWindowController::class.java.classLoader.getResource("behavioraldictionarywindow.fxml"))
+            val loader = FXMLLoader(DefinitionsWindowController::class.java.classLoader.getResource("definitionswindow.fxml"))
             val root = loader.load<Parent>()
-            return loader.getController<BehaviouralDictionaryWindowController>().apply()
+            return loader.getController<DefinitionsWindowController>().apply()
             {
                 stage = Stage()
                 stage.scene = Scene(root)
@@ -39,7 +38,7 @@ class BehaviouralDictionaryWindowController
     lateinit var stage:Stage
         private set
 
-    @FXML lateinit var behaviouralDictionaryTableView:BehavioralDictionaryTableView
+    @FXML lateinit var definitionsTableView:DefinitionsTableView
 
     /**
      * invoked by framework when the File > Save [MenuItem] is pressed.
@@ -51,7 +50,7 @@ class BehaviouralDictionaryWindowController
             {
                 title = "Save Input Data"
                 initialDirectory = File(Paths.get(".").toAbsolutePath().normalize().toString())
-                extensionFilters += FileChooser.ExtensionFilter("behaviours","*.behaviours")
+                extensionFilters += FileChooser.ExtensionFilter("definitions","*.definitions")
                 extensionFilters += FileChooser.ExtensionFilter("json","*.json")
                 extensionFilters += FileChooser.ExtensionFilter("any","*")
             }
@@ -61,9 +60,9 @@ class BehaviouralDictionaryWindowController
         {
             try
             {
-                val objects = behaviouralDictionaryTableView.items
-                    .map {BehaviouralDictionarySaveFileParser.BehaviourEntry(it.proposition,it.behavior)}
-                BehaviouralDictionarySaveFileParser.save(file,objects)
+                val objects = definitionsTableView.items
+                    .map {DefinitionsSaveFileParser.BehaviourEntry(it.proposition,it.behavior)}
+                DefinitionsSaveFileParser.save(file,objects)
             }
             catch (ex:Exception)
             {
@@ -83,7 +82,7 @@ class BehaviouralDictionaryWindowController
             {
                 title = "Load Input Data"
                 initialDirectory = File(Paths.get(".").toAbsolutePath().normalize().toString())
-                extensionFilters += FileChooser.ExtensionFilter("behaviours","*.behaviours")
+                extensionFilters += FileChooser.ExtensionFilter("definitions","*.definitions")
                 extensionFilters += FileChooser.ExtensionFilter("json","*.json")
                 extensionFilters += FileChooser.ExtensionFilter("any","*")
             }
@@ -94,14 +93,14 @@ class BehaviouralDictionaryWindowController
         {
             try
             {
-                val parsedObjects = BehaviouralDictionarySaveFileParser.load(file)
+                val parsedObjects = DefinitionsSaveFileParser.load(file)
 
                 // load agents from the file
                 val objects = parsedObjects
-                    .map {BehavioralDictionaryTableView.RowData(it.proposition,it.behaviour)}
+                    .map {DefinitionsTableView.RowData(it.proposition,it.behaviour)}
 
                 // add them to the table view
-                behaviouralDictionaryTableView.items.setAll(objects)
+                definitionsTableView.items.setAll(objects)
             }
             catch (ex:Exception)
             {

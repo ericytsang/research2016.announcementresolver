@@ -1,12 +1,12 @@
 <?import javafx.scene.layout.VBox?>
-<?import com.github.ericytsang.research2016.announcementresolver.guicomponent.BehavioralDictionaryTableView?>
+<?import com.github.ericytsang.research2016.announcementresolver.guicomponent.DefinitionsTableView?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.MenuBar?>
 <?import javafx.scene.control.Menu?>
 <?import javafx.scene.control.MenuItem?>
 <VBox
     xmlns:fx="http://javafx.com/fxml"
-    fx:controller="com.github.ericytsang.research2016.announcementresolver.window.BehaviouralDictionaryWindowController"
+    fx:controller="com.github.ericytsang.research2016.announcementresolver.window.DefinitionsWindowController"
     prefWidth="400.0"
     prefHeight="400.0">
     <MenuBar>
@@ -44,8 +44,8 @@
                 bottom="8.0"
                 right="8.0"/>
         </padding>
-        <BehavioralDictionaryTableView
-            fx:id="behaviouralDictionaryTableView"
+        <DefinitionsTableView
+            fx:id="definitionsTableView"
             VBox.vgrow="ALWAYS"/>
     </VBox>
 </VBox>

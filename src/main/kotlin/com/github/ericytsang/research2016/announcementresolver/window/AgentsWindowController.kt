@@ -141,7 +141,7 @@ class AgentsWindowController:Initializable
     /**
      * window used by user to map variables to robot behaviours.
      */
-    private val behaviouralDictionaryWindowController = BehaviouralDictionaryWindowController.new()
+    private val behaviouralDictionaryWindowController = DefinitionsWindowController.new()
 
     private val obstacleWindowController = ObstacleWindowController.new()
 
@@ -205,12 +205,12 @@ class AgentsWindowController:Initializable
          * when the behaviouralDictionaryWindowController's tableview items are changed,
          * update the dictionaries in the agents as well
          */
-        behaviouralDictionaryWindowController.behaviouralDictionaryTableView.items.addListener(InvalidationListener()
+        behaviouralDictionaryWindowController.definitionsTableView.items.addListener(InvalidationListener()
         {
             agentControllers.values.forEach()
             {
                 it.uploadBehaviourDictionary(behaviouralDictionaryWindowController
-                    .behaviouralDictionaryTableView.items
+                    .definitionsTableView.items
                     .map {it.proposition to it.behavior})
             }
         })
@@ -369,7 +369,7 @@ class AgentsWindowController:Initializable
                     agentController.uploadBeliefRevisionStrategy(rowData
                         .problemInstance.beliefRevisionStrategy)
                     agentController.uploadBehaviourDictionary(behaviouralDictionaryWindowController
-                        .behaviouralDictionaryTableView.items
+                        .definitionsTableView.items
                         .map {it.proposition to it.behavior})
                     agentController.uploadObstacles(simulationWindowController
                         .simulation.entityToCellsMap

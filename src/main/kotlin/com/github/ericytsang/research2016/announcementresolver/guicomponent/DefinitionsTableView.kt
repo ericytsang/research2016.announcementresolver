@@ -26,7 +26,7 @@ import javafx.util.Callback
 /**
  * Created by surpl on 8/13/2016.
  */
-class BehavioralDictionaryTableView:EditableTableView<BehavioralDictionaryTableView.RowData>()
+class DefinitionsTableView:EditableTableView<DefinitionsTableView.RowData>()
 {
     companion object
     {
@@ -86,7 +86,7 @@ class BehavioralDictionaryTableView:EditableTableView<BehavioralDictionaryTableV
     }
 
     /**
-     * holds the data for a single row in [BehavioralDictionaryTableView].
+     * holds the data for a single row in [DefinitionsTableView].
      */
     data class RowData(val proposition:Proposition,val behavior:Behaviour)
 
@@ -117,6 +117,7 @@ class BehavioralDictionaryTableView:EditableTableView<BehavioralDictionaryTableV
 
         init
         {
+            title = if (model == null) "Add New Definition" else "Edit Existing Definition"
             dialogPane.minWidth = 400.0
             dialogPane.minHeight = 400.0
             isResizable = true

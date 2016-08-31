@@ -13,7 +13,7 @@ import java.io.PrintWriter
 /**
  * Created by surpl on 8/25/2016.
  */
-object BehaviouralDictionarySaveFileParser
+object DefinitionsSaveFileParser
 {
     /**
      * the root node of all the json is a [JSONArray] of [JSONObject] elements

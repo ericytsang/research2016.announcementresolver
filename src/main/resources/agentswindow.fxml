@@ -31,7 +31,7 @@
             text="Window">
             <CheckMenuItem
                 fx:id="toggleDictionaryWindowCheckMenuItem"
-                text="Behavioural Dictionary"
+                text="Definitions"
                 onAction="#toggleDictionaryWindow"/>
             <CheckMenuItem
                 fx:id="toggleObstacleWindowCheckMenuItem"
