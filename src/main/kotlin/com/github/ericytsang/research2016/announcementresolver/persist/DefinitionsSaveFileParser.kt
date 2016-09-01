@@ -41,7 +41,8 @@ object DefinitionsSaveFileParser
                     DO_NOTHING,
                     GUARD,
                     PATROL,
-                    WANDER
+                    WANDER,
+                    HIDE
                 }
             }
 
@@ -150,6 +151,10 @@ object DefinitionsSaveFileParser
             {
                 "${jsonSchema.behaviour.name}" mapsTo jsonSchema.behaviour.name.Value.WANDER.name
             }
+            is Behaviour.Hide -> Json.obj()
+            {
+                "${jsonSchema.behaviour.name}" mapsTo jsonSchema.behaviour.name.Value.HIDE.name
+            }
             is Behaviour.Guard -> Json.obj()
             {
                 "${jsonSchema.behaviour.name}" mapsTo jsonSchema.behaviour.name.Value.GUARD.name
@@ -182,6 +187,7 @@ object DefinitionsSaveFileParser
         {
             jsonSchema.behaviour.name.Value.WANDER -> Behaviour.Wander()
             jsonSchema.behaviour.name.Value.DO_NOTHING -> Behaviour.DoNothing()
+            jsonSchema.behaviour.name.Value.HIDE -> Behaviour.Hide()
             jsonSchema.behaviour.name.Value.PATROL ->
             {
                 val waypoints = getJSONArray("${jsonSchema.behaviour.waypoints}").map()

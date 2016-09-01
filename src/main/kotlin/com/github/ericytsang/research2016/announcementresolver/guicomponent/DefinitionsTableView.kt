@@ -109,7 +109,8 @@ class DefinitionsTableView:EditableTableView<DefinitionsTableView.RowData>()
                 DoNothingBehaviorOption(),
                 WanderBehaviorOption(),
                 GuardBehaviorOption(),
-                PatrolBehaviorOption())
+                PatrolBehaviorOption(),
+                HideBehaviorOption())
 
             // set control value to reflect model data
             product = model?.behavior
@@ -153,6 +154,17 @@ class DefinitionsTableView:EditableTableView<DefinitionsTableView.RowData>()
                 product as Behaviour.Wander
             }
             override fun toString():String = "Wander"
+        }
+
+        private class HideBehaviorOption():PolymorphicComboBox.Option<Behaviour>
+        {
+            override val panel:Node? = null
+            override fun build() = Behaviour.Hide()
+            override fun parse(product:Behaviour)
+            {
+                product as Behaviour.Hide
+            }
+            override fun toString():String = "Hide"
         }
 
         private class GuardBehaviorOption():PolymorphicComboBox.Option<Behaviour>

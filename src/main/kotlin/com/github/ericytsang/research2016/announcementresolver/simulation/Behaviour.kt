@@ -30,6 +30,8 @@ sealed class Behaviour
         }
     }
 
+    class Hide():Behaviour()
+
     override fun toString():String = "${javaClass.simpleName}()"
 
     enum class CardinalDirection(val friendly:String,val angle:Double)

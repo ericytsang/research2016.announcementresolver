@@ -10,15 +10,24 @@ object AStar
     interface Node<This:Node<This>>
     {
         /**
-         * each key is a neighbour of this node and the mapped value is the cost
-         * of traversing to the neighbour from this node.
+         * each key is a neighbour of this [Node] and the mapped value is the
+         * cost of traversing to the neighbour from this [Node].
          */
         val neighbours:Map<This,Double>
 
-        fun estimateTravelCostTo(other:This):Double
+        /**
+         * returns the estimated cost (in the same unit as in [neighbours]) from
+         * this [Node] to a goal [Node].
+         */
+        fun estimateRemainingCost():Double
+
+        /**
+         * returns true if this [Node] is a valid goal.
+         */
+        fun isSolution():Boolean
     }
 
-    fun <Node:AStar.Node<Node>> run(start:Node,goal:Node,maxIterations:Int):Result<Node>
+    fun <Node:AStar.Node<Node>> run(start:Node,maxCost:Double):Result<Node>
     {
         // set of evaluated nodes
         val closedSet = mutableSetOf<Node>()
@@ -33,17 +42,17 @@ object AStar
         val costs = mutableMapOf(start to 0.0)
 
         // maps nodes to the estimated cost it takes to travel to it from the start plus from it to the goal
-        val estimatedCosts = mutableMapOf(start to start.estimateTravelCostTo(goal))
+        val estimatedCosts = mutableMapOf(start to start.estimateRemainingCost())
 
         // keep running the algorithm until we exhaust all possibilities
-        for (i in 1..maxIterations)
+        while (true)
         {
             // get a reference to the node closest to the goal
             val closestNode = openSet.minBy {estimatedCosts[it]!!}
 
             // if the closest node is the goal or we have exhausted all
             // possibilities, break out of the loop to return a result
-            if (closestNode == goal || closestNode == null)
+            if (closestNode == null || closestNode.isSolution())
             {
                 break
             }
@@ -61,20 +70,24 @@ object AStar
                     continue
                 }
 
-                // add it to the open set for later evaluation otherwise
-                else
+                val pathCost = costs[closestNode]!!+neighbourCost
+
+                // if cost to get to this node exceeds the maximum, ignore it
+                if (pathCost > maxCost)
                 {
-                    openSet.add(neighbour)
+                    continue
                 }
+
+                // if we've made it this far, add it to the open set for later evaluation
+                openSet.add(neighbour)
 
                 // if travel cost to the neighbour from closestNode is faster
                 // than any previously known route, then update the path to
                 // travel to neighbour from closestNode.
-                val pathCost = costs[closestNode]!!+neighbourCost
                 if (pathCost < costs[neighbour] ?: Double.MAX_VALUE)
                 {
                     parents[neighbour] = closestNode
-                    estimatedCosts[neighbour] = pathCost+neighbour.estimateTravelCostTo(goal)
+                    estimatedCosts[neighbour] = pathCost+neighbour.estimateRemainingCost()
                     costs[neighbour] = pathCost
                 }
             }
