@@ -108,6 +108,7 @@ class VirtualAgentController:AgentController()
                 is Behaviour.Guard -> MoveTo(Simulation.Cell.getElseMake(behaviour.x,behaviour.y),behaviour.direction)
                 is Behaviour.Patrol -> Patrol(behaviour.waypoints)
                 is Behaviour.Hide -> Hide()
+                //is Behaviour.Follow -> TODO()
                 null -> DoNothing()
             }
             if (tentativeValue != aiStateMachine.value)

@@ -32,6 +32,14 @@ sealed class Behaviour
 
     class Hide():Behaviour()
 
+//    class Follow(val agentController:AgentController):Behaviour()
+//    {
+//        override fun toString():String
+//        {
+//            return "Follow(agent=$agentController)"
+//        }
+//    }
+
     override fun toString():String = "${javaClass.simpleName}()"
 
     enum class CardinalDirection(val friendly:String,val angle:Double)
