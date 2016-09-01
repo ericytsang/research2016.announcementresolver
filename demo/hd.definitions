@@ -1,0 +1,54 @@
+[
+    {
+        "proposition": "1",
+        "behaviour": {"name": "DO_NOTHING"}
+    },
+    {
+        "proposition": "a and e",
+        "behaviour": {
+            "guard": {
+                "x": 0,
+                "y": -1,
+                "direction": "NORTH"
+            },
+            "name": "GUARD"
+        }
+    },
+    {
+        "proposition": "b and e",
+        "behaviour": {
+            "guard": {
+                "x": 1,
+                "y": 0,
+                "direction": "EAST"
+            },
+            "name": "GUARD"
+        }
+    },
+    {
+        "proposition": "c and e",
+        "behaviour": {
+            "guard": {
+                "x": 0,
+                "y": 1,
+                "direction": "SOUTH"
+            },
+            "name": "GUARD"
+        }
+    },
+    {
+        "proposition": "d and e",
+        "behaviour": {
+            "guard": {
+                "x": -1,
+                "y": 0,
+                "direction": "WEST"
+            },
+            "name": "GUARD"
+        }
+    },
+    {
+        "proposition": "1",
+        "behaviour": {"name": "WANDER"}
+    }
+]

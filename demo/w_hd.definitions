@@ -1,0 +1,82 @@
+[
+    {
+        "proposition": "1",
+        "behaviour": {"name": "DO_NOTHING"}
+    },
+    {
+        "proposition": "-a and b and c and d",
+        "behaviour": {
+            "name": "PATROL",
+            "waypoints": [
+                {
+                    "x": -7,
+                    "y": -1,
+                    "direction": "WEST"
+                },
+                {
+                    "x": -1,
+                    "y": -7,
+                    "direction": "NORTH"
+                }
+            ]
+        }
+    },
+    {
+        "proposition": "a and -b and c and d",
+        "behaviour": {
+            "name": "PATROL",
+            "waypoints": [
+                {
+                    "x": 7,
+                    "y": -1,
+                    "direction": "EAST"
+                },
+                {
+                    "x": 1,
+                    "y": -7,
+                    "direction": "NORTH"
+                }
+            ]
+        }
+    },
+    {
+        "proposition": "a and b and -c and d",
+        "behaviour": {
+            "name": "PATROL",
+            "waypoints": [
+                {
+                    "x": 7,
+                    "y": 1,
+                    "direction": "EAST"
+                },
+                {
+                    "x": 1,
+                    "y": 7,
+                    "direction": "SOUTH"
+                }
+            ]
+        }
+    },
+    {
+        "proposition": "a and b and c and -d",
+        "behaviour": {
+            "name": "PATROL",
+            "waypoints": [
+                {
+                    "x": -7,
+                    "y": 1,
+                    "direction": "WEST"
+                },
+                {
+                    "x": -1,
+                    "y": 7,
+                    "direction": "SOUTH"
+                }
+            ]
+        }
+    },
+    {
+        "proposition": "1",
+        "behaviour": {"name": "WANDER"}
+    }
+]

@@ -1,0 +1,90 @@
+[
+    {
+        "color": {
+            "r": 1,
+            "b": 1,
+            "g": 0
+        },
+        "targetK": "a and b and c and d",
+        "position": {
+            "x": 0,
+            "y": -1
+        },
+        "initialK": ["-a and b and c and d"],
+        "operator": {
+            "name": "WEIGHTED_HAMMING_DISTANCE",
+            "weights": {
+                "b": 1,
+                "c": 1,
+                "d": 1
+            }
+        },
+        "direction": "NORTH"
+    },
+    {
+        "color": {
+            "r": 1,
+            "b": 0,
+            "g": 1
+        },
+        "targetK": "a and b and c and d",
+        "position": {
+            "x": 1,
+            "y": 0
+        },
+        "initialK": ["a and -b and c and d"],
+        "operator": {
+            "name": "WEIGHTED_HAMMING_DISTANCE",
+            "weights": {
+                "a": 1,
+                "c": 1,
+                "d": 1
+            }
+        },
+        "direction": "EAST"
+    },
+    {
+        "color": {
+            "r": 1,
+            "b": 0,
+            "g": 0
+        },
+        "targetK": "a and b and c and d",
+        "position": {
+            "x": 0,
+            "y": 1
+        },
+        "initialK": ["a and b and -c and d"],
+        "operator": {
+            "name": "WEIGHTED_HAMMING_DISTANCE",
+            "weights": {
+                "a": 1,
+                "b": 1,
+                "d": 1
+            }
+        },
+        "direction": "SOUTH"
+    },
+    {
+        "color": {
+            "r": 0,
+            "b": 1,
+            "g": 0
+        },
+        "targetK": "a and b and c and d",
+        "position": {
+            "x": -1,
+            "y": 0
+        },
+        "initialK": ["a and b and c and -d"],
+        "operator": {
+            "name": "WEIGHTED_HAMMING_DISTANCE",
+            "weights": {
+                "a": 1,
+                "b": 1,
+                "c": 1
+            }
+        },
+        "direction": "WEST"
+    }
+]
