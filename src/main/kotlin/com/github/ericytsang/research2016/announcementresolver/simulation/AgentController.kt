@@ -78,6 +78,7 @@ abstract class AgentController:Simulation.Entity,CanvasRenderer.Renderee
     {
         graphicsContext.fill = bodyColor
         graphicsContext.fillOval(-cellLength*.25,-cellLength*.25,cellLength*.5,cellLength*.5)
+        graphicsContext.lineWidth = 3.0
         graphicsContext.stroke = bodyColor
         graphicsContext.strokeLine(0.0,0.0,cellLength,0.0)
     }
