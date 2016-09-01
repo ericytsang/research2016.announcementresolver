@@ -402,6 +402,7 @@ class VirtualAgentController:AgentController()
 
     private inner class FollowRoute(private var path:List<Simulation.Cell>):AiState
     {
+        private var previousDistanceToDestination = Double.MAX_VALUE
         override var result:AiState.Status = AiState.Status.PENDING
         override fun onEnter() = Unit
         override fun onExit() = Unit
@@ -433,6 +434,13 @@ class VirtualAgentController:AgentController()
             // how much the agent should displace to move towards the destination this update
             val deltaPosition = destination.subtract(position).normalize().multiply(Math.min(distanceToDestination,MOVE_MAX_SPEED))
 
+            // if we seem to have deviated from the path, set result to fail
+            if (distanceToDestination > previousDistanceToDestination)
+            {
+                result = AiState.Status.FAIL
+                return
+            }
+
             // if we're not facing the destination yet, turn towards it
             if (Math.abs(deltaDirection) > TURN_THRESHOLD)
             {
@@ -452,6 +460,11 @@ class VirtualAgentController:AgentController()
             {
                 path = path.drop(1)
             }
+
+            // update the distance to the next waypoint in the path
+            previousDistanceToDestination = path.firstOrNull()
+                ?.let {Point2D(it.x.toDouble(),it.y.toDouble())}
+                ?.distance(position) ?: 0.0
         }
         override fun hashCode():Int = 0
         override fun equals(other:Any?):Boolean = false
