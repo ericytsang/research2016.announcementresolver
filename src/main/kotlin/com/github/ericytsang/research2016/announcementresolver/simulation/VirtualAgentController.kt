@@ -6,7 +6,6 @@ import com.github.ericytsang.lib.algorithm.angleDifference
 import com.github.ericytsang.lib.collections.getRandom
 import com.github.ericytsang.lib.concurrent.future
 import com.github.ericytsang.lib.oopatterns.BackedField
-import com.github.ericytsang.lib.oopatterns.Change
 import com.github.ericytsang.lib.oopatterns.StateMachine
 import com.github.ericytsang.lib.simulation.Simulation
 import com.github.ericytsang.research2016.propositionallogic.*
@@ -23,6 +22,7 @@ class VirtualAgentController:AgentController()
         private const val MOVE_THRESHOLD:Double = 0.1
         private const val TURN_MAX_SPEED:Double = 5.0
         private const val TURN_THRESHOLD:Double = 0.01
+
     }
 
     override val isConnected = BackedField(true)
@@ -503,11 +503,8 @@ class VirtualAgentController:AgentController()
         {
             override val neighbours:Map<CellToAStarNodeAdapter,Double> get()
             {
-                return listOf(
-                    newAStarNode(Simulation.Cell.getElseMake(cell.x+1,cell.y),goal),
-                    newAStarNode(Simulation.Cell.getElseMake(cell.x-1,cell.y),goal),
-                    newAStarNode(Simulation.Cell.getElseMake(cell.x,cell.y+1),goal),
-                    newAStarNode(Simulation.Cell.getElseMake(cell.x,cell.y-1),goal))
+                return adjacentCells
+                    .map {newAStarNode(it,goal)}
                     .filter {it.cell !in obstacles}
                     .associate {it to 1.0}
             }
@@ -522,32 +519,13 @@ class VirtualAgentController:AgentController()
         {
             override val neighbours:Map<CellToAStarNodeAdapter,Double> get()
             {
-                return listOf(
-                    newAStarNode(Simulation.Cell.getElseMake(cell.x+1,cell.y)),
-                    newAStarNode(Simulation.Cell.getElseMake(cell.x-1,cell.y)),
-                    newAStarNode(Simulation.Cell.getElseMake(cell.x,cell.y+1)),
-                    newAStarNode(Simulation.Cell.getElseMake(cell.x,cell.y-1)))
+                return adjacentCells
+                    .map {newAStarNode(it)}
                     .filter {it.cell !in obstacles}
                     .associate {it to 1.0}
             }
             override fun estimateRemainingCost():Double = 0.0
             override fun isSolution():Boolean = false
         }
-    }
-
-    /**
-     * wraps a [Simulation.Cell] object and provides the [AStar.Node]
-     * interface so it can be passed to [AStar.run].
-     */
-    private abstract inner class CellToAStarNodeAdapter(val cell:Simulation.Cell):AStar.Node<CellToAStarNodeAdapter>
-    {
-        val adjacentCells:Set<Simulation.Cell> get() = setOf(
-            Simulation.Cell.getElseMake(cell.x+1,cell.y),
-            Simulation.Cell.getElseMake(cell.x-1,cell.y),
-            Simulation.Cell.getElseMake(cell.x,cell.y+1),
-            Simulation.Cell.getElseMake(cell.x,cell.y-1))
-        override fun equals(other:Any?):Boolean = other is CellToAStarNodeAdapter && other.cell == cell
-        override fun hashCode():Int = cell.hashCode()
-        override fun toString():String = cell.toString()
     }
 }
