@@ -131,8 +131,6 @@ class VirtualAgentController:AgentController()
         {PENDING,SUCCESS,FAIL}
     }
 
-    // todo: add patrol state
-
     private inner class DoNothing:AiState
     {
         override val result:AiState.Status = AiState.Status.SUCCESS
@@ -142,8 +140,6 @@ class VirtualAgentController:AgentController()
         override fun hashCode():Int = 0
         override fun equals(other:Any?):Boolean = other is DoNothing
     }
-
-    // todo: add parameters to wander so can specify local wander or something
 
     private inner class Wander:AiState
     {
