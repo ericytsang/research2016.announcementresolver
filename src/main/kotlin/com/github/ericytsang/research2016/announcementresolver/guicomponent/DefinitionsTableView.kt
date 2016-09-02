@@ -1,10 +1,11 @@
 package com.github.ericytsang.research2016.announcementresolver.guicomponent
 
-import com.github.ericytsang.lib.collections.ObservableList
 import com.github.ericytsang.lib.javafxutils.PolymorphicComboBox
 import com.github.ericytsang.lib.javafxutils.EditableTableView
 import com.github.ericytsang.lib.javafxutils.JavafxUtils
+import com.github.ericytsang.lib.javafxutils.NamedValue
 import com.github.ericytsang.lib.javafxutils.ValidatableTextField
+import com.github.ericytsang.research2016.announcementresolver.simulation.AgentController
 import com.github.ericytsang.research2016.announcementresolver.simulation.Behaviour
 import com.github.ericytsang.research2016.beliefrevisor.gui.Dimens
 import com.github.ericytsang.research2016.propositionallogic.Proposition
@@ -21,6 +22,7 @@ import javafx.scene.control.Label
 import javafx.scene.control.TableColumn
 import javafx.scene.control.TextField
 import javafx.scene.layout.VBox
+import javafx.scene.paint.Color
 import javafx.util.Callback
 
 /**
@@ -110,7 +112,8 @@ class DefinitionsTableView:EditableTableView<DefinitionsTableView.RowData>()
                 WanderBehaviorOption(),
                 GuardBehaviorOption(),
                 PatrolBehaviorOption(),
-                HideBehaviorOption())
+                HideBehaviorOption(),
+                FollowBehaviorOption())
 
             // set control value to reflect model data
             product = model?.behavior
@@ -165,6 +168,27 @@ class DefinitionsTableView:EditableTableView<DefinitionsTableView.RowData>()
                 product as Behaviour.Hide
             }
             override fun toString():String = "Hide"
+        }
+
+        private class FollowBehaviorOption():PolymorphicComboBox.Option<Behaviour>
+        {
+            private val agentColorComboBox = ComboBox<NamedValue<Color>>().apply()
+            {
+                items.addAll(AgentsTableView.AGENT_COLOR_OPTIONS)
+            }
+
+            override val panel = VBox().apply()
+            {
+                children += Label("Color of agent to follow:")
+                children += agentColorComboBox
+            }
+            override fun build() = Behaviour.Follow(agentColorComboBox.value.value)
+            override fun parse(product:Behaviour)
+            {
+                product as Behaviour.Follow
+                agentColorComboBox.value = agentColorComboBox.items.find {it.value == product.agentColor}
+            }
+            override fun toString():String = "Follow"
         }
 
         private class GuardBehaviorOption():PolymorphicComboBox.Option<Behaviour>

@@ -5,6 +5,7 @@ import com.github.ericytsang.research2016.announcementresolver.simulation.Behavi
 import com.github.ericytsang.research2016.propositionallogic.Proposition
 import com.github.ericytsang.research2016.propositionallogic.makeFrom
 import com.github.ericytsang.research2016.propositionallogic.toParsableString
+import javafx.scene.paint.Color
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -42,7 +43,36 @@ object DefinitionsSaveFileParser
                     GUARD,
                     PATROL,
                     WANDER,
-                    HIDE
+                    HIDE,
+                    FOLLOW,
+                }
+            }
+
+            /**
+             * exclusive to [jsonSchema.proposition.behaviour.name.Value.GUARD].
+             * key to [JSONObject] describing position of agent.
+             */
+            object follow:Json.Schema()
+            {
+                /**
+                 * color of the agent to follow.
+                 */
+                object agentColor:Json.Schema()
+                {
+                    /**
+                     * key to [Double] describing red component of the [agentColor].
+                     */
+                    object r:Json.Schema()
+
+                    /**
+                     * key to [Double] describing green component of the [agentColor].
+                     */
+                    object g:Json.Schema()
+
+                    /**
+                     * key to [Double] describing blue component of the [agentColor].
+                     */
+                    object b:Json.Schema()
                 }
             }
 
@@ -155,6 +185,19 @@ object DefinitionsSaveFileParser
             {
                 "${jsonSchema.behaviour.name}" mapsTo jsonSchema.behaviour.name.Value.HIDE.name
             }
+            is Behaviour.Follow -> Json.obj()
+            {
+                "${jsonSchema.behaviour.name}" mapsTo jsonSchema.behaviour.name.Value.FOLLOW.name
+                "${jsonSchema.behaviour.follow}" mapsTo Json.obj()
+                {
+                    "${jsonSchema.behaviour.follow.agentColor}" mapsTo Json.obj()
+                    {
+                        "${jsonSchema.behaviour.follow.agentColor.r}" mapsTo agentColor.red
+                        "${jsonSchema.behaviour.follow.agentColor.g}" mapsTo agentColor.blue
+                        "${jsonSchema.behaviour.follow.agentColor.b}" mapsTo agentColor.green
+                    }
+                }
+            }
             is Behaviour.Guard -> Json.obj()
             {
                 "${jsonSchema.behaviour.name}" mapsTo jsonSchema.behaviour.name.Value.GUARD.name
@@ -188,6 +231,19 @@ object DefinitionsSaveFileParser
             jsonSchema.behaviour.name.Value.WANDER -> Behaviour.Wander()
             jsonSchema.behaviour.name.Value.DO_NOTHING -> Behaviour.DoNothing()
             jsonSchema.behaviour.name.Value.HIDE -> Behaviour.Hide()
+            jsonSchema.behaviour.name.Value.FOLLOW ->
+            {
+                val red = getJSONObject("${jsonSchema.behaviour.follow}")
+                    .getJSONObject("${jsonSchema.behaviour.follow.agentColor}")
+                    .getDouble("${jsonSchema.behaviour.follow.agentColor.r}")
+                val green = getJSONObject("${jsonSchema.behaviour.follow}")
+                    .getJSONObject("${jsonSchema.behaviour.follow.agentColor}")
+                    .getDouble("${jsonSchema.behaviour.follow.agentColor.g}")
+                val blue = getJSONObject("${jsonSchema.behaviour.follow}")
+                    .getJSONObject("${jsonSchema.behaviour.follow.agentColor}")
+                    .getDouble("${jsonSchema.behaviour.follow.agentColor.b}")
+                Behaviour.Follow(Color.color(red,blue,green))
+            }
             jsonSchema.behaviour.name.Value.PATROL ->
             {
                 val waypoints = getJSONArray("${jsonSchema.behaviour.waypoints}").map()

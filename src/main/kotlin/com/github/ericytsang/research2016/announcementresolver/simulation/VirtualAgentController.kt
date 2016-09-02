@@ -108,7 +108,7 @@ class VirtualAgentController:AgentController()
                 is Behaviour.Guard -> MoveTo(Simulation.Cell.getElseMake(behaviour.x,behaviour.y),behaviour.direction)
                 is Behaviour.Patrol -> Patrol(behaviour.waypoints)
                 is Behaviour.Hide -> Hide()
-                //is Behaviour.Follow -> TODO()
+                is Behaviour.Follow -> Follow(behaviour.agentColor)
                 null -> DoNothing()
             }
             if (tentativeValue != aiStateMachine.value)
@@ -311,6 +311,89 @@ class VirtualAgentController:AgentController()
         }
     }
 
+    private inner class Follow(val agentColor:Color):AiState
+    {
+        private val stateMachine = StateMachine<AiState>(PickLeader())
+        override fun onEnter() = Unit
+        override fun onExit() = Unit
+        override fun update(simulation:Simulation)
+        {
+            stateMachine.stateAccess.withLock()
+            {
+                stateMachine.value.update(simulation)
+                when
+                {
+                    stateMachine.value is FollowRoute && stateMachine.value.result == AiState.Status.SUCCESS ->
+                    {
+                        stateMachine.value = PickLeader()
+                    }
+                }
+            }
+        }
+        override var result:AiState.Status = AiState.Status.PENDING
+        override fun hashCode():Int = 0
+        override fun equals(other:Any?):Boolean = other is Hide
+
+        private inner class PickLeader():AiState
+        {
+            override fun onEnter() = Unit
+            override fun onExit() = Unit
+            override fun update(simulation:Simulation)
+            {
+                val tentativeLeader = simulation.allEntities
+                    .filter {it is AgentController && it.bodyColor == agentColor}
+                    .map {it as AgentController}
+                    .firstOrNull()
+                if (tentativeLeader != null)
+                {
+                    stateMachine.stateAccess.withLock()
+                    {
+                        stateMachine.value = PlanRoute(tentativeLeader)
+                    }
+                }
+            }
+            override val result:AiState.Status = AiState.Status.PENDING
+            override fun hashCode():Int = 0
+            override fun equals(other:Any?):Boolean = false
+        }
+
+        private inner class PlanRoute(var agentController:AgentController):AiState
+        {
+            val MAX_COST = 100.0
+
+            val pathPlanningTask = future()
+            {
+                Thread.currentThread().priority = Thread.MIN_PRIORITY
+                val goalCell = Simulation.Cell.getElseMake(
+                    Math.round(agentController.position.x).toInt(),
+                    Math.round(agentController.position.y).toInt())
+                val startCell = Simulation.Cell.getElseMake(
+                    Math.round(position.x).toInt(),
+                    Math.round(position.y).toInt())
+                    .let {newAStarNode(it,goalCell,3)}
+                AStar.run(startCell,MAX_COST)
+            }
+
+            override fun onEnter() = Unit
+            override fun onExit() = Unit
+            override fun update(simulation:Simulation)
+            {
+                if (pathPlanningTask.isDone.value)
+                {
+                    val result = pathPlanningTask.await()
+                    val goal = result.parents.minBy {it.key.estimateRemainingCost()}?.key!!
+                    stateMachine.stateAccess.withLock()
+                    {
+                        stateMachine.value = FollowRoute(result.plotPathTo(goal).map {it.cell})
+                    }
+                }
+            }
+            override val result:AiState.Status = AiState.Status.PENDING
+            override fun hashCode():Int = 0
+            override fun equals(other:Any?):Boolean = false
+        }
+    }
+
     /**
      * behaviour that makes the agent move to [targetCell] and face
      * [targetDirection] once it arrives there.
@@ -422,12 +505,19 @@ class VirtualAgentController:AgentController()
             // there is a destination to move to...
             // destination position
             val destination = path.first().let {Point2D(it.x.toDouble(),it.y.toDouble())}
+            // distance from our position to destination
+            val distanceToDestination = position.distance(destination)
             // angle between positive x axis and line from our position to destination
             val destinationDirection = angle(position.x,position.y,destination.x,destination.y)
             // how much the agent should change directions to turn towards the destination this update
-            val deltaDirection = angleDifference(direction,destinationDirection).coerceIn(-TURN_MAX_SPEED,TURN_MAX_SPEED)
-            // distance from our position to destination
-            val distanceToDestination = position.distance(destination)
+            val deltaDirection = if (distanceToDestination < MOVE_THRESHOLD)
+            {
+                0.0
+            }
+            else
+            {
+                angleDifference(direction,destinationDirection).coerceIn(-TURN_MAX_SPEED,TURN_MAX_SPEED)
+            }
             // how much the agent should displace to move towards the destination this update
             val deltaPosition = destination.subtract(position).normalize().multiply(Math.min(distanceToDestination,MOVE_MAX_SPEED))
 
@@ -493,7 +583,7 @@ class VirtualAgentController:AgentController()
         override fun equals(other:Any?):Boolean = false
     }
 
-    private fun newAStarNode(cell:Simulation.Cell,goal:Simulation.Cell):CellToAStarNodeAdapter
+    private fun newAStarNode(cell:Simulation.Cell,goal:Simulation.Cell,minDistance:Int = 0):CellToAStarNodeAdapter
     {
         return object:CellToAStarNodeAdapter(cell)
         {
@@ -505,7 +595,7 @@ class VirtualAgentController:AgentController()
                     .associate {it to 1.0}
             }
             override fun estimateRemainingCost():Double = (Math.abs(cell.x-goal.x)+Math.abs(cell.y-goal.y)).toDouble()
-            override fun isSolution():Boolean = cell == goal
+            override fun isSolution():Boolean = estimateRemainingCost() <= minDistance
         }
     }
 

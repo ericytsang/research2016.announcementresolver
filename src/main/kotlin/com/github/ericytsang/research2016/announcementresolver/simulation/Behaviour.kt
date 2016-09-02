@@ -1,5 +1,7 @@
 package com.github.ericytsang.research2016.announcementresolver.simulation
 
+import javafx.scene.paint.Color
+
 sealed class Behaviour
 {
     class Wander():Behaviour()
@@ -32,13 +34,16 @@ sealed class Behaviour
 
     class Hide():Behaviour()
 
-//    class Follow(val agentController:AgentController):Behaviour()
-//    {
-//        override fun toString():String
-//        {
-//            return "Follow(agent=$agentController)"
-//        }
-//    }
+    /**
+     * @param agentColor the color of the agent to follow
+     */
+    class Follow(val agentColor:Color):Behaviour()
+    {
+        override fun toString():String
+        {
+            return "Follow(color=$agentColor)"
+        }
+    }
 
     override fun toString():String = "${javaClass.simpleName}()"
 

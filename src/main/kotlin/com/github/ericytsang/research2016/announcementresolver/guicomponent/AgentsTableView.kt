@@ -82,7 +82,7 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
          * the options available in the input dialog for setting the color of
          * the agent.
          */
-        private val AGENT_COLOR_OPTIONS:List<NamedValue<Color>> = listOf(
+        val AGENT_COLOR_OPTIONS:List<NamedValue<Color>> = listOf(
             NamedValue("Red",Color.RED),
             NamedValue("Green",Color.GREEN),
             NamedValue("Blue",Color.BLUE),
