@@ -59,14 +59,6 @@ class VirtualAgentController:AgentController()
         }
     }
 
-    override fun uploadObstacles(obstacles:Set<Simulation.Cell>)
-    {
-        if (this.obstacles != obstacles)
-        {
-            this.obstacles = obstacles
-        }
-    }
-
     override fun uploadSentenceForBeliefRevision(sentence:Proposition)
     {
         beliefState = beliefRevisionStrategy.revise(beliefState,sentence)
@@ -74,6 +66,19 @@ class VirtualAgentController:AgentController()
 
     override fun update(simulation:Simulation)
     {
+        obstructedCells = simulation.entityToCellsMap
+            .filter {it.key is Obstacle}
+            .flatMap {it.value}
+            .toSet()
+        avoidedCells = simulation.entityToCellsMap
+            .filter {it.key is AgentController && it.key !== this}
+            .flatMap {it.value}
+            .toSet()
+        simulation.entityToCellsMap[this] = setOf(
+            Simulation.Cell.getElseMake(
+                Math.round(position.x).toInt(),
+                Math.round(position.y).toInt())
+        )
         aiStateMachine.value.update(simulation)
     }
 
@@ -91,7 +96,15 @@ class VirtualAgentController:AgentController()
             refreshBehaviour()
         }
 
-    private var obstacles:Set<Simulation.Cell> = emptySet()
+    /**
+     * cells that the agent cannot go through.
+     */
+    private var obstructedCells:Set<Simulation.Cell> = emptySet()
+
+    /**
+     * cells that the agent cannot stay on.
+     */
+    private var avoidedCells:Set<Simulation.Cell> = emptySet()
 
     private var beliefRevisionStrategy:BeliefRevisionStrategy = ComparatorBeliefRevisionStrategy({HammingDistanceComparator(it)})
 
@@ -266,10 +279,14 @@ class VirtualAgentController:AgentController()
                 stateMachine.value.update(simulation)
                 when
                 {
-                    stateMachine.value is FollowRoute && stateMachine.value.result == AiState.Status.SUCCESS ->
+                    stateMachine.value is FollowPath && stateMachine.value.result == AiState.Status.SUCCESS ->
                     {
                         stateMachine.value = DoNothing()
                         result = AiState.Status.SUCCESS
+                    }
+                    stateMachine.value is FollowPath && stateMachine.value.result == AiState.Status.FAIL ->
+                    {
+                        stateMachine.value = PlanRoute()
                     }
                 }
             }
@@ -280,24 +297,6 @@ class VirtualAgentController:AgentController()
 
         inner class PlanRoute():AiState
         {
-            override fun onEnter() = Unit
-            override fun onExit() = Unit
-            override fun update(simulation:Simulation)
-            {
-                if (pathPlanningTask.isDone.value)
-                {
-                    val result = pathPlanningTask.await()
-                    val goal = result.parents.maxBy {it.key.adjacentCells.count {it in obstacles}}?.key!!
-                    stateMachine.stateAccess.withLock()
-                    {
-                        stateMachine.value = FollowRoute(result.plotPathTo(goal).map {it.cell})
-                    }
-                }
-            }
-            override val result:AiState.Status = AiState.Status.PENDING
-            override fun hashCode():Int = 0
-            override fun equals(other:Any?):Boolean = false
-
             val MAX_COST = 100
 
             val pathPlanningTask = future()
@@ -309,6 +308,27 @@ class VirtualAgentController:AgentController()
                     .let {newAStarNode(it)}
                 AStar.run(startCell,MAX_COST)
             }
+
+            override fun onEnter() = Unit
+            override fun onExit() = Unit
+            override fun update(simulation:Simulation)
+            {
+                if (pathPlanningTask.isDone.value)
+                {
+                    val result = pathPlanningTask.await()
+                    val goal = result.parents.maxBy()
+                    {
+                        it.key.adjacentCells.count {simulation.cellToEntitiesMap[it]?.any {it is Obstacle} ?: false}
+                    }?.key!!
+                    stateMachine.stateAccess.withLock()
+                    {
+                        stateMachine.value = FollowPath(result.plotPathTo(goal).map {it.cell})
+                    }
+                }
+            }
+            override val result:AiState.Status = AiState.Status.PENDING
+            override fun hashCode():Int = 0
+            override fun equals(other:Any?):Boolean = false
         }
     }
 
@@ -324,7 +344,7 @@ class VirtualAgentController:AgentController()
                 stateMachine.value.update(simulation)
                 when
                 {
-                    stateMachine.value is FollowRoute && stateMachine.value.result == AiState.Status.SUCCESS ->
+                    stateMachine.value is FollowPath && stateMachine.value.result != AiState.Status.PENDING ->
                     {
                         stateMachine.value = PickLeader()
                     }
@@ -383,13 +403,14 @@ class VirtualAgentController:AgentController()
                 {
                     val result = pathPlanningTask.await()
                     val goal = result.parents
+                        .filter {it.key.cell !in avoidedCells}
                         .minBy {it.key.estimateRemainingCost()}?.key
                         ?: position
                         .let {Simulation.Cell.getElseMake(Math.round(it.x).toInt(),Math.round(it.y).toInt())}
                         .let {newAStarNode(it,it,0)}
                     stateMachine.stateAccess.withLock()
                     {
-                        stateMachine.value = FollowRoute(result.plotPathTo(goal).map {it.cell})
+                        stateMachine.value = FollowPath(result.plotPathTo(goal).map {it.cell})
                     }
                 }
             }
@@ -411,7 +432,7 @@ class VirtualAgentController:AgentController()
                 stateMachine.value.update(simulation)
                 when
                 {
-                    stateMachine.value is FollowRoute && stateMachine.value.result == AiState.Status.SUCCESS ||
+                    stateMachine.value is FollowPath && stateMachine.value.result != AiState.Status.PENDING ||
                         stateMachine.value is AlignDirection && stateMachine.value.result == AiState.Status.SUCCESS ->
                     {
                         stateMachine.value = PickLeader()
@@ -473,6 +494,7 @@ class VirtualAgentController:AgentController()
                     // of the a* algorithm
                     val result = pathPlanningTask.await()
                     val goal = result.parents
+                        .filter {it.key.cell !in avoidedCells}
                         .minBy {it.key.estimateRemainingCost()}?.key
                         ?: position
                         .let {Simulation.Cell.getElseMake(Math.round(it.x).toInt(),Math.round(it.y).toInt())}
@@ -484,7 +506,7 @@ class VirtualAgentController:AgentController()
                     {
                         stateMachine.stateAccess.withLock()
                         {
-                            stateMachine.value = FollowRoute(pathToGoal)
+                            stateMachine.value = FollowPath(pathToGoal)
                         }
                     }
 
@@ -494,10 +516,10 @@ class VirtualAgentController:AgentController()
                     {
                         val direction = when
                         {
-                            agentController.position.y > position.y -> Behaviour.CardinalDirection.NORTH
-                            agentController.position.x < position.x -> Behaviour.CardinalDirection.EAST
-                            agentController.position.y < position.y -> Behaviour.CardinalDirection.SOUTH
-                            agentController.position.x > position.x -> Behaviour.CardinalDirection.WEST
+                            Math.round(agentController.position.y) > Math.round(position.y) -> Behaviour.CardinalDirection.NORTH
+                            Math.round(agentController.position.x) < Math.round(position.x) -> Behaviour.CardinalDirection.EAST
+                            Math.round(agentController.position.y) < Math.round(position.y) -> Behaviour.CardinalDirection.SOUTH
+                            Math.round(agentController.position.x) > Math.round(position.x) -> Behaviour.CardinalDirection.WEST
                             else -> null
                         }
                         if (direction != null)
@@ -535,9 +557,9 @@ class VirtualAgentController:AgentController()
             {
                 when
                 {
-                    stateMachine.value is FollowRoute && stateMachine.value.result == AiState.Status.SUCCESS ->
+                    stateMachine.value is FollowPath && stateMachine.value.result == AiState.Status.SUCCESS ->
                         stateMachine.value = AlignDirection(targetDirection)
-                    stateMachine.value is FollowRoute && stateMachine.value.result == AiState.Status.FAIL ->
+                    stateMachine.value is FollowPath && stateMachine.value.result == AiState.Status.FAIL ->
                         stateMachine.value = PlanRoute()
                     stateMachine.value is AlignDirection && stateMachine.value.result == AiState.Status.SUCCESS ->
                         stateMachine.value = Done()
@@ -581,9 +603,11 @@ class VirtualAgentController:AgentController()
                     stateMachine.stateAccess.withLock()
                     {
                         val aStarResult = pathPlanningTask.await()
-                        val goal = aStarResult.parents.minBy {it.key.estimateRemainingCost()}?.key!!
+                        val goal = aStarResult.parents
+                            .filter {it.key.cell !in avoidedCells}
+                            .minBy {it.key.estimateRemainingCost()}?.key!!
                         val path = aStarResult.plotPathTo(goal).map {it.cell}
-                        stateMachine.value = FollowRoute(path)
+                        stateMachine.value = FollowPath(path)
                     }
                 }
             }
@@ -605,7 +629,7 @@ class VirtualAgentController:AgentController()
         }
     }
 
-    private inner class FollowRoute(private var path:List<Simulation.Cell>):AiState
+    private inner class FollowPath(private var path:List<Simulation.Cell>):AiState
     {
         private var previousDistanceToDestination = Double.MAX_VALUE
         override var result:AiState.Status = AiState.Status.PENDING
@@ -621,11 +645,20 @@ class VirtualAgentController:AgentController()
             }
 
             // if the path turns out to be obstructed, set result to failure
-            if (simulation.cellToEntitiesMap[path.first()]?.any {it is Obstacle} == true)
+            if (path.first() in obstructedCells)
             {
                 result = AiState.Status.FAIL
                 return
             }
+
+            // if the destination turns out to be something that should be avoided, set result to failure
+            if (path.last() in avoidedCells)
+            {
+                result = AiState.Status.FAIL
+                return
+            }
+
+            simulation.entityToCellsMap[this@VirtualAgentController] = simulation.entityToCellsMap[this@VirtualAgentController]!!+path.first()
 
             // there is a destination to move to...
             // destination position
@@ -716,7 +749,7 @@ class VirtualAgentController:AgentController()
             {
                 return adjacentCells
                     .map {newAStarNode(it,goal,minDistance)}
-                    .filter {it.cell !in obstacles}
+                    .filter {it.cell !in obstructedCells}
                     .associate {it to 1}
             }
             override fun estimateRemainingCost():Int
@@ -737,7 +770,7 @@ class VirtualAgentController:AgentController()
             {
                 return adjacentCells
                     .map {newAStarNode(it)}
-                    .filter {it.cell !in obstacles}
+                    .filter {it.cell !in obstructedCells}
                     .associate {it to 1}
             }
             override fun estimateRemainingCost():Int = 0

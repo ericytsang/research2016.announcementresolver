@@ -274,31 +274,6 @@ class AgentsWindowController:Initializable
         })
 
         /*
-         * when obstacles in the simulation change, upload the information to
-         * the agents.
-         */
-        run()
-        {
-            var knownOccupiedCells = emptySet<Simulation.Cell>()
-            simulationWindowController.simulation.entityToCellsMap.observers += KeyedChange.Observer.new()
-            {
-                val occupiedCells = simulationWindowController
-                    .simulation.entityToCellsMap
-                    .filter {it.key is Obstacle}
-                    .flatMap {it.value}.toSet()
-
-                if (occupiedCells != knownOccupiedCells)
-                {
-                    knownOccupiedCells = occupiedCells
-                    agentControllers.values.forEach()
-                    {
-                        it.uploadObstacles(occupiedCells)
-                    }
-                }
-            }
-        }
-
-        /*
          * when the agent table view is modified, update the corresponding
          * [AgentController] objects in [agentControllers].
          */
@@ -371,10 +346,6 @@ class AgentsWindowController:Initializable
                     agentController.uploadBehaviourDictionary(behaviouralDictionaryWindowController
                         .definitionsTableView.items
                         .map {it.proposition to it.behavior})
-                    agentController.uploadObstacles(simulationWindowController
-                        .simulation.entityToCellsMap
-                        .filter {it.key is Obstacle}
-                        .flatMap {it.value}.toSet())
 
                     // add the agent controller to the simulation
                     simulationWindowController.simulation.entityToCellsMap.put(agentController,emptySet())

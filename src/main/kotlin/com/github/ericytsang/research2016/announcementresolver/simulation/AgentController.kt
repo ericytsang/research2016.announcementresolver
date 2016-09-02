@@ -40,12 +40,6 @@ abstract class AgentController:Simulation.Entity,CanvasRenderer.Renderee
     abstract fun uploadBehaviourDictionary(behaviourDictionary:List<Pair<Proposition,Behaviour>>)
 
     /**
-     * sends information about the location of obstacles to the remote agent so
-     * it knows where they are so it can do better path finding.
-     */
-    abstract fun uploadObstacles(obstacles:Set<Simulation.Cell>)
-
-    /**
      * sends the sentence to the remote agent to revise its belief state by it
      * to change its behaviour.
      */
