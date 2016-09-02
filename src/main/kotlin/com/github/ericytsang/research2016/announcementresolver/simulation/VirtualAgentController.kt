@@ -297,7 +297,7 @@ class VirtualAgentController:AgentController()
             override fun hashCode():Int = 0
             override fun equals(other:Any?):Boolean = false
 
-            val MAX_COST = 100.0
+            val MAX_COST = 100
 
             val pathPlanningTask = future()
             {
@@ -359,7 +359,7 @@ class VirtualAgentController:AgentController()
 
         private inner class PlanRoute(var agentController:AgentController):AiState
         {
-            val MAX_COST = 100.0
+            val MAX_COST = 100
 
             val pathPlanningTask = future()
             {
@@ -381,7 +381,11 @@ class VirtualAgentController:AgentController()
                 if (pathPlanningTask.isDone.value)
                 {
                     val result = pathPlanningTask.await()
-                    val goal = result.parents.minBy {it.key.estimateRemainingCost()}?.key!!
+                    val goal = result.parents
+                        .minBy {it.key.estimateRemainingCost()}?.key
+                        ?: position
+                        .let {Simulation.Cell.getElseMake(Math.round(it.x).toInt(),Math.round(it.y).toInt())}
+                        .let {newAStarNode(it,it,0)}
                     stateMachine.stateAccess.withLock()
                     {
                         stateMachine.value = FollowRoute(result.plotPathTo(goal).map {it.cell})
@@ -432,7 +436,7 @@ class VirtualAgentController:AgentController()
 
         private inner class PlanRoute():AiState
         {
-            val WORK_MULTIPLIER = 50.0
+            val WORK_MULTIPLIER = 50
 
             val pathPlanningTask = future()
             {
@@ -440,8 +444,11 @@ class VirtualAgentController:AgentController()
                 val startCell = Simulation.Cell.getElseMake(
                     Math.round(position.x).toInt(),
                     Math.round(position.y).toInt())
-                    .let {newAStarNode(it,targetCell)}
-                val maxCost = position.distance(targetCell.x.toDouble(),targetCell.y.toDouble())*WORK_MULTIPLIER
+                    .let {newAStarNode(it,targetCell,0)}
+                val maxCost = position
+                    .distance(targetCell.x.toDouble(),targetCell.y.toDouble())
+                    .times(WORK_MULTIPLIER)
+                    .let {it.toInt()}
                 AStar.run(startCell,maxCost)
             }
 
@@ -583,19 +590,24 @@ class VirtualAgentController:AgentController()
         override fun equals(other:Any?):Boolean = false
     }
 
-    private fun newAStarNode(cell:Simulation.Cell,goal:Simulation.Cell,minDistance:Int = 0):CellToAStarNodeAdapter
+    private fun newAStarNode(cell:Simulation.Cell,goal:Simulation.Cell,minDistance:Int):CellToAStarNodeAdapter
     {
         return object:CellToAStarNodeAdapter(cell)
         {
-            override val neighbours:Map<CellToAStarNodeAdapter,Double> get()
+            override val neighbours:Map<CellToAStarNodeAdapter,Int> get()
             {
                 return adjacentCells
-                    .map {newAStarNode(it,goal)}
+                    .map {newAStarNode(it,goal,minDistance)}
                     .filter {it.cell !in obstacles}
-                    .associate {it to 1.0}
+                    .associate {it to 1}
             }
-            override fun estimateRemainingCost():Double = (Math.abs(cell.x-goal.x)+Math.abs(cell.y-goal.y)).toDouble()
-            override fun isSolution():Boolean = estimateRemainingCost() <= minDistance
+            override fun estimateRemainingCost():Int
+            {
+                return Math.abs(cell.x-goal.x)
+                    .plus(Math.abs(cell.y-goal.y))
+                    .let {Math.max(it-minDistance,0)}
+            }
+            override fun isSolution():Boolean = estimateRemainingCost() == 0
         }
     }
 
@@ -603,14 +615,14 @@ class VirtualAgentController:AgentController()
     {
         return object:CellToAStarNodeAdapter(cell)
         {
-            override val neighbours:Map<CellToAStarNodeAdapter,Double> get()
+            override val neighbours:Map<CellToAStarNodeAdapter,Int> get()
             {
                 return adjacentCells
                     .map {newAStarNode(it)}
                     .filter {it.cell !in obstacles}
-                    .associate {it to 1.0}
+                    .associate {it to 1}
             }
-            override fun estimateRemainingCost():Double = 0.0
+            override fun estimateRemainingCost():Int = 0
             override fun isSolution():Boolean = false
         }
     }

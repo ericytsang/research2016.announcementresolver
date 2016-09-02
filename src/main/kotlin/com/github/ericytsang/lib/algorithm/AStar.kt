@@ -13,13 +13,13 @@ object AStar
          * each key is a neighbour of this [Node] and the mapped value is the
          * cost of traversing to the neighbour from this [Node].
          */
-        val neighbours:Map<This,Double>
+        val neighbours:Map<This,Int>
 
         /**
          * returns the estimated cost (in the same unit as in [neighbours]) from
          * this [Node] to a goal [Node].
          */
-        fun estimateRemainingCost():Double
+        fun estimateRemainingCost():Int
 
         /**
          * returns true if this [Node] is a valid goal.
@@ -27,7 +27,7 @@ object AStar
         fun isSolution():Boolean
     }
 
-    fun <Node:AStar.Node<Node>> run(start:Node,maxCost:Double):Result<Node>
+    fun <Node:AStar.Node<Node>> run(start:Node,maxCost:Int):Result<Node>
     {
         // set of evaluated nodes
         val closedSet = mutableSetOf<Node>()
@@ -39,7 +39,7 @@ object AStar
         val parents = mutableMapOf<Node,Node?>(start to null)
 
         // maps nodes to the total cost it takes to traverse to it
-        val costs = mutableMapOf(start to 0.0)
+        val costs = mutableMapOf(start to 0)
 
         // maps nodes to the estimated cost it takes to travel to it from the start plus from it to the goal
         val estimatedCosts = mutableMapOf(start to start.estimateRemainingCost())
@@ -84,7 +84,7 @@ object AStar
                 // if travel cost to the neighbour from closestNode is faster
                 // than any previously known route, then update the path to
                 // travel to neighbour from closestNode.
-                if (pathCost < costs[neighbour] ?: Double.MAX_VALUE)
+                if (pathCost < costs[neighbour] ?: Int.MAX_VALUE)
                 {
                     parents[neighbour] = closestNode
                     estimatedCosts[neighbour] = pathCost+neighbour.estimateRemainingCost()
@@ -96,7 +96,7 @@ object AStar
         return Result(start,parents,costs,estimatedCosts)
     }
 
-    class Result<Node:AStar.Node<Node>>(val source:Node,val parents:Map<Node,Node?>,val costs:Map<Node,Double>,val estimatedCosts:Map<Node,Double>)
+    class Result<Node:AStar.Node<Node>>(val source:Node,val parents:Map<Node,Node?>,val costs:Map<Node,Int>,val estimatedCosts:Map<Node,Int>)
     {
         fun plotPathTo(goal:Node):List<Node>
         {

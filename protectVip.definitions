@@ -1,0 +1,25 @@
+[
+    {
+        "proposition": "1",
+        "behaviour": {"name": "DO_NOTHING"}
+    },
+    {
+        "proposition": "vip and danger",
+        "behaviour": {"name": "HIDE"}
+    },
+    {
+        "proposition": "bodyGuard and danger",
+        "behaviour": {
+            "name": "FOLLOW",
+            "follow": {"agentColor": {
+                "r": 1,
+                "b": 0,
+                "g": 1
+            }}
+        }
+    },
+    {
+        "proposition": "1",
+        "behaviour": {"name": "WANDER"}
+    }
+]

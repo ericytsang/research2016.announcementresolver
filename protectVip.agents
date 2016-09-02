@@ -1,0 +1,62 @@
+[
+    {
+        "color": {
+            "r": 1,
+            "b": 1,
+            "g": 0
+        },
+        "targetK": "danger",
+        "position": {
+            "x": 0,
+            "y": -1
+        },
+        "initialK": ["vip and -danger"],
+        "operator": {"name": "HAMMING_DISTANCE"},
+        "direction": "NORTH"
+    },
+    {
+        "color": {
+            "r": 1,
+            "b": 0,
+            "g": 1
+        },
+        "targetK": "danger",
+        "position": {
+            "x": 1,
+            "y": 0
+        },
+        "initialK": ["bodyGuard and -danger"],
+        "operator": {"name": "HAMMING_DISTANCE"},
+        "direction": "EAST"
+    },
+    {
+        "color": {
+            "r": 1,
+            "b": 0,
+            "g": 0
+        },
+        "targetK": "danger",
+        "position": {
+            "x": 0,
+            "y": 1
+        },
+        "initialK": ["bodyGuard and -danger"],
+        "operator": {"name": "HAMMING_DISTANCE"},
+        "direction": "SOUTH"
+    },
+    {
+        "color": {
+            "r": 0,
+            "b": 1,
+            "g": 0
+        },
+        "targetK": "danger",
+        "position": {
+            "x": -1,
+            "y": 0
+        },
+        "initialK": ["someGuy and -danger"],
+        "operator": {"name": "HAMMING_DISTANCE"},
+        "direction": "WEST"
+    }
+]
