@@ -1,5 +1,9 @@
 [
     {
+        "proposition": "1",
+        "behaviour": {"name": "DO_NOTHING"}
+    },
+    {
         "proposition": "patrol and yellow",
         "behaviour": {
             "name": "PATROL",

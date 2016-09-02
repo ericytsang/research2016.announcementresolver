@@ -109,6 +109,7 @@ class VirtualAgentController:AgentController()
                 is Behaviour.Patrol -> Patrol(behaviour.waypoints)
                 is Behaviour.Hide -> Hide()
                 is Behaviour.Follow -> Follow(behaviour.agentColor)
+                is Behaviour.Protect -> Protect(behaviour.agentColor)
                 null -> DoNothing()
             }
             if (tentativeValue != aiStateMachine.value)
@@ -389,6 +390,123 @@ class VirtualAgentController:AgentController()
                     stateMachine.stateAccess.withLock()
                     {
                         stateMachine.value = FollowRoute(result.plotPathTo(goal).map {it.cell})
+                    }
+                }
+            }
+            override val result:AiState.Status = AiState.Status.PENDING
+            override fun hashCode():Int = 0
+            override fun equals(other:Any?):Boolean = false
+        }
+    }
+
+    private inner class Protect(val agentColor:Color):AiState
+    {
+        private val stateMachine = StateMachine<AiState>(PickLeader())
+        override fun onEnter() = Unit
+        override fun onExit() = Unit
+        override fun update(simulation:Simulation)
+        {
+            stateMachine.stateAccess.withLock()
+            {
+                stateMachine.value.update(simulation)
+                when
+                {
+                    stateMachine.value is FollowRoute && stateMachine.value.result == AiState.Status.SUCCESS ||
+                        stateMachine.value is AlignDirection && stateMachine.value.result == AiState.Status.SUCCESS ->
+                    {
+                        stateMachine.value = PickLeader()
+                    }
+                }
+            }
+        }
+        override var result:AiState.Status = AiState.Status.PENDING
+        override fun hashCode():Int = 0
+        override fun equals(other:Any?):Boolean = other is Hide
+
+        private inner class PickLeader():AiState
+        {
+            override fun onEnter() = Unit
+            override fun onExit() = Unit
+            override fun update(simulation:Simulation)
+            {
+                val tentativeLeader = simulation.allEntities
+                    .filter {it is AgentController && it.bodyColor == agentColor}
+                    .map {it as AgentController}
+                    .firstOrNull()
+                if (tentativeLeader != null)
+                {
+                    stateMachine.stateAccess.withLock()
+                    {
+                        stateMachine.value = PlanRoute(tentativeLeader)
+                    }
+                }
+            }
+            override val result:AiState.Status = AiState.Status.PENDING
+            override fun hashCode():Int = 0
+            override fun equals(other:Any?):Boolean = false
+        }
+
+        private inner class PlanRoute(var agentController:AgentController):AiState
+        {
+            val MAX_COST = 100
+
+            val pathPlanningTask = future()
+            {
+                Thread.currentThread().priority = Thread.MIN_PRIORITY
+                val goalCell = Simulation.Cell.getElseMake(
+                    Math.round(agentController.position.x).toInt(),
+                    Math.round(agentController.position.y).toInt())
+                val startCell = Simulation.Cell.getElseMake(
+                    Math.round(position.x).toInt(),
+                    Math.round(position.y).toInt())
+                    .let {newAStarNode(it,goalCell,1)}
+                AStar.run(startCell,MAX_COST)
+            }
+
+            override fun onEnter() = Unit
+            override fun onExit() = Unit
+            override fun update(simulation:Simulation)
+            {
+                if (pathPlanningTask.isDone.value)
+                {
+                    // calculate the path to a cell to move to from the result
+                    // of the a* algorithm
+                    val result = pathPlanningTask.await()
+                    val goal = result.parents
+                        .minBy {it.key.estimateRemainingCost()}?.key
+                        ?: position
+                        .let {Simulation.Cell.getElseMake(Math.round(it.x).toInt(),Math.round(it.y).toInt())}
+                        .let {newAStarNode(it,it,0)}
+                    val pathToGoal = result.plotPathTo(goal).map {it.cell}
+
+                    // if we're not at the goal yet, move there
+                    if (pathToGoal.size > 1)
+                    {
+                        stateMachine.stateAccess.withLock()
+                        {
+                            stateMachine.value = FollowRoute(pathToGoal)
+                        }
+                    }
+
+                    // rotate to face away from the agent this agent is
+                    // protecting otherwise
+                    else
+                    {
+                        val direction = when
+                        {
+                            agentController.position.y > position.y -> Behaviour.CardinalDirection.NORTH
+                            agentController.position.x < position.x -> Behaviour.CardinalDirection.EAST
+                            agentController.position.y < position.y -> Behaviour.CardinalDirection.SOUTH
+                            agentController.position.x > position.x -> Behaviour.CardinalDirection.WEST
+                            else -> null
+                        }
+                        if (direction != null)
+                        {
+                            stateMachine.stateAccess.withLock()
+                            {
+                                stateMachine.value = AlignDirection(direction)
+                            }
+                        }
                     }
                 }
             }

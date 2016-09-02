@@ -113,7 +113,8 @@ class DefinitionsTableView:EditableTableView<DefinitionsTableView.RowData>()
                 GuardBehaviorOption(),
                 PatrolBehaviorOption(),
                 HideBehaviorOption(),
-                FollowBehaviorOption())
+                FollowBehaviorOption(),
+                ProtectBehaviorOption())
 
             // set control value to reflect model data
             product = model?.behavior
@@ -179,6 +180,7 @@ class DefinitionsTableView:EditableTableView<DefinitionsTableView.RowData>()
 
             override val panel = VBox().apply()
             {
+                spacing = Dimens.KEYLINE_SMALL.toDouble()
                 children += Label("Color of agent to follow:")
                 children += agentColorComboBox
             }
@@ -189,6 +191,28 @@ class DefinitionsTableView:EditableTableView<DefinitionsTableView.RowData>()
                 agentColorComboBox.value = agentColorComboBox.items.find {it.value == product.agentColor}
             }
             override fun toString():String = "Follow"
+        }
+
+        private class ProtectBehaviorOption():PolymorphicComboBox.Option<Behaviour>
+        {
+            private val agentColorComboBox = ComboBox<NamedValue<Color>>().apply()
+            {
+                items.addAll(AgentsTableView.AGENT_COLOR_OPTIONS)
+            }
+
+            override val panel = VBox().apply()
+            {
+                spacing = Dimens.KEYLINE_SMALL.toDouble()
+                children += Label("Color of agent to protect:")
+                children += agentColorComboBox
+            }
+            override fun build() = Behaviour.Protect(agentColorComboBox.value.value)
+            override fun parse(product:Behaviour)
+            {
+                product as Behaviour.Protect
+                agentColorComboBox.value = agentColorComboBox.items.find {it.value == product.agentColor}
+            }
+            override fun toString():String = "Protect"
         }
 
         private class GuardBehaviorOption():PolymorphicComboBox.Option<Behaviour>

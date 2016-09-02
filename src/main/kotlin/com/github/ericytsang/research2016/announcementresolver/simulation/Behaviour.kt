@@ -45,6 +45,21 @@ sealed class Behaviour
         }
     }
 
+    /**
+     * this behavior is similar to follow, except it follows the target agent
+     * more closely and has the protecting agent face away from the agent it's
+     * protecting once it reaches it.
+     *
+     * @param agentColor the color of the agent to protect
+     */
+    class Protect(val agentColor:Color):Behaviour()
+    {
+        override fun toString():String
+        {
+            return "Protect(color=$agentColor)"
+        }
+    }
+
     override fun toString():String = "${javaClass.simpleName}()"
 
     enum class CardinalDirection(val friendly:String,val angle:Double)

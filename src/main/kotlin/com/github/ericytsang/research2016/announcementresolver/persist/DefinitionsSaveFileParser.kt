@@ -45,6 +45,7 @@ object DefinitionsSaveFileParser
                     WANDER,
                     HIDE,
                     FOLLOW,
+                    PROTECT,
                 }
             }
 
@@ -53,6 +54,34 @@ object DefinitionsSaveFileParser
              * key to [JSONObject] describing position of agent.
              */
             object follow:Json.Schema()
+            {
+                /**
+                 * color of the agent to follow.
+                 */
+                object agentColor:Json.Schema()
+                {
+                    /**
+                     * key to [Double] describing red component of the [agentColor].
+                     */
+                    object r:Json.Schema()
+
+                    /**
+                     * key to [Double] describing green component of the [agentColor].
+                     */
+                    object g:Json.Schema()
+
+                    /**
+                     * key to [Double] describing blue component of the [agentColor].
+                     */
+                    object b:Json.Schema()
+                }
+            }
+
+            /**
+             * exclusive to [jsonSchema.proposition.behaviour.name.Value.GUARD].
+             * key to [JSONObject] describing position of agent.
+             */
+            object protect:Json.Schema()
             {
                 /**
                  * color of the agent to follow.
@@ -198,6 +227,19 @@ object DefinitionsSaveFileParser
                     }
                 }
             }
+            is Behaviour.Protect -> Json.obj()
+            {
+                "${jsonSchema.behaviour.name}" mapsTo jsonSchema.behaviour.name.Value.PROTECT.name
+                "${jsonSchema.behaviour.protect}" mapsTo Json.obj()
+                {
+                    "${jsonSchema.behaviour.protect.agentColor}" mapsTo Json.obj()
+                    {
+                        "${jsonSchema.behaviour.protect.agentColor.r}" mapsTo agentColor.red
+                        "${jsonSchema.behaviour.protect.agentColor.g}" mapsTo agentColor.blue
+                        "${jsonSchema.behaviour.protect.agentColor.b}" mapsTo agentColor.green
+                    }
+                }
+            }
             is Behaviour.Guard -> Json.obj()
             {
                 "${jsonSchema.behaviour.name}" mapsTo jsonSchema.behaviour.name.Value.GUARD.name
@@ -244,6 +286,19 @@ object DefinitionsSaveFileParser
                     .getDouble("${jsonSchema.behaviour.follow.agentColor.b}")
                 Behaviour.Follow(Color.color(red,blue,green))
             }
+            jsonSchema.behaviour.name.Value.PROTECT ->
+            {
+                val red = getJSONObject("${jsonSchema.behaviour.protect}")
+                    .getJSONObject("${jsonSchema.behaviour.protect.agentColor}")
+                    .getDouble("${jsonSchema.behaviour.protect.agentColor.r}")
+                val green = getJSONObject("${jsonSchema.behaviour.protect}")
+                    .getJSONObject("${jsonSchema.behaviour.protect.agentColor}")
+                    .getDouble("${jsonSchema.behaviour.protect.agentColor.g}")
+                val blue = getJSONObject("${jsonSchema.behaviour.protect}")
+                    .getJSONObject("${jsonSchema.behaviour.protect.agentColor}")
+                    .getDouble("${jsonSchema.behaviour.protect.agentColor.b}")
+                Behaviour.Protect(Color.color(red,blue,green))
+            }
             jsonSchema.behaviour.name.Value.PATROL ->
             {
                 val waypoints = getJSONArray("${jsonSchema.behaviour.waypoints}").map()
@@ -251,16 +306,22 @@ object DefinitionsSaveFileParser
                     it as JSONObject
                     val x = it.getInt("${jsonSchema.behaviour.waypoints.x}")
                     val y = it.getInt("${jsonSchema.behaviour.waypoints.y}")
-                    val direction = it.getString("${jsonSchema.behaviour.waypoints.direction}").let {Behaviour.CardinalDirection.valueOf(it)}
+                    val direction = it
+                        .getString("${jsonSchema.behaviour.waypoints.direction}")
+                        .let {Behaviour.CardinalDirection.valueOf(it)}
                     Behaviour.Guard(x,y,direction)
                 }
                 Behaviour.Patrol(waypoints)
             }
             jsonSchema.behaviour.name.Value.GUARD ->
             {
-                val x = getJSONObject("${jsonSchema.behaviour.guard}").getInt("${jsonSchema.behaviour.guard.x}")
-                val y = getJSONObject("${jsonSchema.behaviour.guard}").getInt("${jsonSchema.behaviour.guard.y}")
-                val direction = getJSONObject("${jsonSchema.behaviour.guard}").getString("${jsonSchema.behaviour.guard.direction}").let {Behaviour.CardinalDirection.valueOf(it)}
+                val x = getJSONObject("${jsonSchema.behaviour.guard}")
+                    .getInt("${jsonSchema.behaviour.guard.x}")
+                val y = getJSONObject("${jsonSchema.behaviour.guard}")
+                    .getInt("${jsonSchema.behaviour.guard.y}")
+                val direction = getJSONObject("${jsonSchema.behaviour.guard}")
+                    .getString("${jsonSchema.behaviour.guard.direction}")
+                    .let {Behaviour.CardinalDirection.valueOf(it)}
                 Behaviour.Guard(x,y,direction)
             }
         }

@@ -10,11 +10,22 @@
     {
         "proposition": "bodyGuard and danger",
         "behaviour": {
+            "name": "PROTECT",
+            "protect": {"agentColor": {
+                "r": 1,
+                "b": 1,
+                "g": 0
+            }}
+        }
+    },
+    {
+        "proposition": "bodyGuard",
+        "behaviour": {
             "name": "FOLLOW",
             "follow": {"agentColor": {
                 "r": 1,
-                "b": 0,
-                "g": 1
+                "b": 1,
+                "g": 0
             }}
         }
     },
