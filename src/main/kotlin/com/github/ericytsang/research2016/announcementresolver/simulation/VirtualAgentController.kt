@@ -118,7 +118,7 @@ class VirtualAgentController:AgentController()
             {
                 is Behaviour.DoNothing -> DoNothing()
                 is Behaviour.Wander -> Wander()
-                is Behaviour.Guard -> MoveTo(Simulation.Cell.getElseMake(behaviour.x,behaviour.y),behaviour.direction)
+                is Behaviour.Guard -> Guard(Simulation.Cell.getElseMake(behaviour.x,behaviour.y),behaviour.direction)
                 is Behaviour.Patrol -> Patrol(behaviour.waypoints)
                 is Behaviour.Hide -> Hide()
                 is Behaviour.Follow -> Follow(behaviour.agentColor)
@@ -538,6 +538,31 @@ class VirtualAgentController:AgentController()
         }
     }
 
+    private inner class Guard(val targetCell:Simulation.Cell,val targetDirection:Behaviour.CardinalDirection):AiState
+    {
+        private var modeTo = MoveTo(targetCell,targetDirection)
+        override fun onEnter() = Unit
+        override fun onExit() = Unit
+        override fun update(simulation:Simulation)
+        {
+            modeTo.update(simulation)
+            if (modeTo.result != AiState.Status.PENDING)
+            {
+                modeTo = MoveTo(targetCell,targetDirection)
+            }
+        }
+
+        override val result:AiState.Status = AiState.Status.PENDING
+
+        override fun hashCode():Int = 0
+        override fun equals(other:Any?):Boolean
+        {
+            return other is Guard &&
+                other.targetCell == targetCell &&
+                other.targetDirection == targetDirection
+        }
+    }
+
     /**
      * behaviour that makes the agent move to [targetCell] and face
      * [targetDirection] once it arrives there.
@@ -758,7 +783,10 @@ class VirtualAgentController:AgentController()
                     .plus(Math.abs(cell.y-goal.y))
                     .let {Math.max(it-minDistance,0)}
             }
-            override fun isSolution():Boolean = estimateRemainingCost() == 0
+            override fun isSolution():Boolean
+            {
+                return cell !in avoidedCells && estimateRemainingCost() == 0
+            }
         }
     }
 
