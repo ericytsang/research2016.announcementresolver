@@ -70,10 +70,19 @@ class DefinitionsTableView:EditableTableView<DefinitionsTableView.RowData>()
         {
             try
             {
-                // todo: better error messages
-                return RowData(
-                    Proposition.makeFrom(inputDialog.variableTextField.text),
-                    inputDialog.behaviorComboBox.product!!)
+                val proposition = try
+                {
+                    Proposition.makeFrom(inputDialog.variableTextField.text)
+                }
+                catch (ex:Exception)
+                {
+                    throw RuntimeException("Invalid input for \"Proposition\". Could not parse \"inputDialog.variableTextField.text\" into a propositional sentence.")
+                }
+
+                val behaviour = inputDialog.behaviorComboBox.product
+                    ?: throw RuntimeException("Please select an option.")
+
+                return RowData(proposition,behaviour)
             }
             catch (ex:Exception)
             {
@@ -320,11 +329,26 @@ class DefinitionsTableView:EditableTableView<DefinitionsTableView.RowData>()
                     {
                         try
                         {
-                            // todo: better error messages
+                            val xPosition = try
+                            {
+                                inputDialog.xPositionTextField.text.toInt()
+                            }
+                            catch (ex:Exception)
+                            {
+                                throw RuntimeException("Invalid input for \"X position\". Could not be parse \"${inputDialog.xPositionTextField.text}\" into a signed integer.")
+                            }
 
-                            val xPosition = inputDialog.xPositionTextField.text.toInt()
-                            val yPosition = inputDialog.yPositionTextField.text.toInt()
+                            val yPosition = try
+                            {
+                                inputDialog.yPositionTextField.text.toInt()
+                            }
+                            catch (ex:Exception)
+                            {
+                                throw RuntimeException("Invalid input for \"Y position\". Could not be parse \"${inputDialog.yPositionTextField.text}\" into a signed integer.")
+                            }
+
                             val direction = inputDialog.directionComboBox.value
+                                ?: throw RuntimeException("Please select an option.")
 
                             return Behaviour.Guard(xPosition,yPosition,direction)
                         }

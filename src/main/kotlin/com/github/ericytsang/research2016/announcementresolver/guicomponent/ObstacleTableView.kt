@@ -84,10 +84,45 @@ class ObstacleTableView:EditableTableView<ObstacleTableView.RowData>()
         {
             try
             {
-                // todo: better error messages
+                val position1X = try
+                {
+                    inputDialog.position1XTextField.text.toInt()
+                }
+                catch (ex:Exception)
+                {
+                    throw RuntimeException("Invalid input for \"Position 1 x\". Could not parse \"${inputDialog.position1XTextField.text}\" into a signed integer.",ex)
+                }
+
+                val position1Y = try
+                {
+                    inputDialog.position1YTextField.text.toInt()
+                }
+                catch (ex:Exception)
+                {
+                    throw RuntimeException("Invalid input for \"Position 1 y\". Could not parse \"${inputDialog.position1YTextField.text}\" into a signed integer.",ex)
+                }
+
+                val position2X = try
+                {
+                    inputDialog.position2XTextField.text.toInt()
+                }
+                catch (ex:Exception)
+                {
+                    throw RuntimeException("Invalid input for \"Position 2 x\". Could not parse \"${inputDialog.position2XTextField.text}\" into a signed integer.",ex)
+                }
+
+                val position2Y = try
+                {
+                    inputDialog.position2YTextField.text.toInt()
+                }
+                catch (ex:Exception)
+                {
+                    throw RuntimeException("Invalid input for \"Position 2 y\". Could not parse \"${inputDialog.position2YTextField.text}\" into a signed integer.",ex)
+                }
+
                 return RowData(
-                    Simulation.Cell.getElseMake(inputDialog.position1XTextField.text.toInt(),inputDialog.position1YTextField.text.toInt()),
-                    Simulation.Cell.getElseMake(inputDialog.position2XTextField.text.toInt(),inputDialog.position2YTextField.text.toInt()))
+                    Simulation.Cell.getElseMake(position1X,position1Y),
+                    Simulation.Cell.getElseMake(position2X,position2Y))
             }
             catch (ex:Exception)
             {
