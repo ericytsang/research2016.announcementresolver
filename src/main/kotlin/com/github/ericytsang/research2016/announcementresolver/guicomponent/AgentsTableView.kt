@@ -236,17 +236,48 @@ class AgentsTableView():EditableTableView<AgentsTableView.RowData>()
         {
             try
             {
-                // todo: better error messages
-
                 // parse initial K, target K and belief revision strategy
-                val initialK = inputDialog.initialKTextField.text.split(",").map {Proposition.makeFrom(it)}.toSet()
-                val targetK = Proposition.makeFrom(inputDialog.targetKTextField.text)
-                val beliefRevisionStrategy = inputDialog.operatorInputPane.beliefRevisionStrategy ?: throw IllegalArgumentException("A belief revision operation must be specified")
+                val initialK = try
+                {
+                    inputDialog.initialKTextField.text.split(",").map {Proposition.makeFrom(it)}.toSet()
+                }
+                catch (ex:Exception)
+                {
+                    throw RuntimeException("Invalid input for \"$DIALOG_LABEL_CURRENT_K\". Could not parse \"${inputDialog.initialKTextField.text}\" into a comma separated list of propositional sentence.",ex)
+                }
+
+                val targetK = try
+                {
+                    Proposition.makeFrom(inputDialog.targetKTextField.text)
+                }
+                catch (ex:Exception)
+                {
+                    throw RuntimeException("Invalid input for \"$DIALOG_LABEL_TARGET_K\". Could not parse \"${inputDialog.targetKTextField.text}\" into a propositional sentence.",ex)
+                }
+
+                val beliefRevisionStrategy = inputDialog.operatorInputPane.beliefRevisionStrategy
+                    ?: throw IllegalArgumentException("A belief revision operation must be specified")
 
                 // get the user's positioning and direction input
-                val newPosition = Simulation.Cell.getElseMake(
-                    inputDialog.initialXPositionTextField.text.toInt(),
-                    inputDialog.initialYPositionTextField.text.toInt())
+                val newPositionX = try
+                {
+                    inputDialog.initialXPositionTextField.text.toInt()
+                }
+                catch (ex:Exception)
+                {
+                    throw RuntimeException("Invalid input for \"$DIALOG_LABEL_JUMP_X\". Could not parse \"${inputDialog.initialXPositionTextField.text}\" into a signed integer.",ex)
+                }
+
+                val newPositionY = try
+                {
+                    inputDialog.initialYPositionTextField.text.toInt()
+                }
+                catch (ex:Exception)
+                {
+                    throw RuntimeException("Invalid input for \"$DIALOG_LABEL_JUMP_Y\". Could not parse \"${inputDialog.initialYPositionTextField.text}\" into a signed integer.",ex)
+                }
+
+                val newPosition = Simulation.Cell.getElseMake(newPositionX,newPositionY)
                 val newDirection = inputDialog.directionComboBox.value.value
 
                 val shouldJumpToPosition = inputDialog.jumpToInitialPositionCheckBox.isSelected

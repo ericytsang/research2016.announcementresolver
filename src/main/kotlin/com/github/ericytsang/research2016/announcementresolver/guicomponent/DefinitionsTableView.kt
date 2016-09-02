@@ -251,7 +251,7 @@ class DefinitionsTableView:EditableTableView<DefinitionsTableView.RowData>()
                 }
                 catch (ex:NumberFormatException)
                 {
-                    throw IllegalStateException("No x position specified.")
+                    throw IllegalStateException("Invalid input for \"X position\". Could not parse \"${xPositionTextField.text}\" into a signed integer.",ex)
                 }
                 val yPosition = try
                 {
@@ -259,7 +259,7 @@ class DefinitionsTableView:EditableTableView<DefinitionsTableView.RowData>()
                 }
                 catch (ex:NumberFormatException)
                 {
-                    throw IllegalStateException("No y position specified.")
+                    throw IllegalStateException("Invalid input for \"Y position\". Could not parse \"${yPositionTextField.text}\" into a signed integer.",ex)
                 }
                 val direction = try
                 {
@@ -267,7 +267,7 @@ class DefinitionsTableView:EditableTableView<DefinitionsTableView.RowData>()
                 }
                 catch (ex:KotlinNullPointerException)
                 {
-                    throw IllegalStateException("No direction position specified.")
+                    throw IllegalStateException("No direction position specified.",ex)
                 }
                 return Behaviour.Guard(xPosition,yPosition,direction)
             }
@@ -335,7 +335,7 @@ class DefinitionsTableView:EditableTableView<DefinitionsTableView.RowData>()
                             }
                             catch (ex:Exception)
                             {
-                                throw RuntimeException("Invalid input for \"X position\". Could not be parse \"${inputDialog.xPositionTextField.text}\" into a signed integer.")
+                                throw RuntimeException("Invalid input for \"X position\". Could not be parse \"${inputDialog.xPositionTextField.text}\" into a signed integer.",ex)
                             }
 
                             val yPosition = try
@@ -344,11 +344,17 @@ class DefinitionsTableView:EditableTableView<DefinitionsTableView.RowData>()
                             }
                             catch (ex:Exception)
                             {
-                                throw RuntimeException("Invalid input for \"Y position\". Could not be parse \"${inputDialog.yPositionTextField.text}\" into a signed integer.")
+                                throw RuntimeException("Invalid input for \"Y position\". Could not be parse \"${inputDialog.yPositionTextField.text}\" into a signed integer.",ex)
                             }
 
-                            val direction = inputDialog.directionComboBox.value
-                                ?: throw RuntimeException("Please select an option.")
+                            val direction = try
+                            {
+                                inputDialog.directionComboBox.value!!
+                            }
+                            catch (ex:KotlinNullPointerException)
+                            {
+                                throw RuntimeException("Please select an option.",ex)
+                            }
 
                             return Behaviour.Guard(xPosition,yPosition,direction)
                         }
