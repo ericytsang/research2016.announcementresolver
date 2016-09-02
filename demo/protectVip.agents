@@ -5,12 +5,12 @@
             "b": 0,
             "g": 1
         },
-        "targetK": "danger",
+        "targetK": "-danger",
         "position": {
             "x": 0,
             "y": -1
         },
-        "initialK": ["vip and -danger"],
+        "initialK": ["-danger and vip"],
         "operator": {"name": "HAMMING_DISTANCE"},
         "direction": "NORTH"
     },
@@ -20,12 +20,12 @@
             "b": 0,
             "g": 0
         },
-        "targetK": "danger",
+        "targetK": "-danger",
         "position": {
             "x": 1,
             "y": 0
         },
-        "initialK": ["bodyGuard and -danger"],
+        "initialK": ["-danger and bodyGuard"],
         "operator": {"name": "HAMMING_DISTANCE"},
         "direction": "NORTH"
     },
@@ -35,12 +35,12 @@
             "b": 0,
             "g": 0
         },
-        "targetK": "danger",
+        "targetK": "-danger",
         "position": {
             "x": -1,
             "y": 0
         },
-        "initialK": ["bodyGuard and -danger"],
+        "initialK": ["-danger and bodyGuard"],
         "operator": {"name": "HAMMING_DISTANCE"},
         "direction": "NORTH"
     },
@@ -50,12 +50,12 @@
             "b": 1,
             "g": 1
         },
-        "targetK": "danger",
+        "targetK": "someGuy",
         "position": {
-            "x": 5,
+            "x": 4,
             "y": 5
         },
-        "initialK": ["someGuy and -danger"],
+        "initialK": ["someGuy"],
         "operator": {"name": "HAMMING_DISTANCE"},
         "direction": "WEST"
     }

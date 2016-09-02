@@ -319,7 +319,7 @@ class VirtualAgentController:AgentController()
                     val goal = result.parents.maxBy()
                     {
                         it.key.adjacentCells.count {simulation.cellToEntitiesMap[it]?.any {it is Obstacle} ?: false}
-                    }?.key!!
+                    }?.key ?: return
                     stateMachine.stateAccess.withLock()
                     {
                         stateMachine.value = FollowPath(result.plotPathTo(goal).map {it.cell})
@@ -630,9 +630,12 @@ class VirtualAgentController:AgentController()
                         val aStarResult = pathPlanningTask.await()
                         val goal = aStarResult.parents
                             .filter {it.key.cell !in avoidedCells}
-                            .minBy {it.key.estimateRemainingCost()}?.key!!
-                        val path = aStarResult.plotPathTo(goal).map {it.cell}
-                        stateMachine.value = FollowPath(path)
+                            .minBy {it.key.estimateRemainingCost()}?.key
+                        if (goal != null)
+                        {
+                            val path = aStarResult.plotPathTo(goal).map {it.cell}
+                            stateMachine.value = FollowPath(path)
+                        }
                     }
                 }
             }
@@ -683,7 +686,10 @@ class VirtualAgentController:AgentController()
                 return
             }
 
-            simulation.entityToCellsMap[this@VirtualAgentController] = simulation.entityToCellsMap[this@VirtualAgentController]!!+path.first()
+            // mark cells and our next position as occupied by us so other
+            // agents wont walk on it.
+            simulation.entityToCellsMap[this@VirtualAgentController] =
+                simulation.entityToCellsMap[this@VirtualAgentController]!!+path.first()
 
             // there is a destination to move to...
             // destination position
