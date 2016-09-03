@@ -1,7 +1,7 @@
 package com.github.ericytsang.research2016.announcementresolver.guicomponent
 
-import com.github.ericytsang.lib.collections.ConstrainedList
-import com.github.ericytsang.lib.collections.Constraint
+import com.github.ericytsang.lib.constrainedlist.ConstrainedList
+import com.github.ericytsang.lib.constrainedlist.Constraint
 import com.github.ericytsang.lib.javafxutils.EditableTableView
 import com.github.ericytsang.lib.javafxutils.ValidatableTextField
 import com.github.ericytsang.lib.simulation.Simulation

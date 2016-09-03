@@ -1,18 +1,16 @@
 package com.github.ericytsang.research2016.announcementresolver.window
 
-import com.github.ericytsang.lib.collections.KeyedChange
 import com.github.ericytsang.lib.concurrent.Future
 import com.github.ericytsang.lib.concurrent.future
 import com.github.ericytsang.lib.javafxutils.JavafxUtils
-import com.github.ericytsang.lib.oopatterns.Change
-import com.github.ericytsang.lib.oopatterns.addAndUpdate
+import com.github.ericytsang.lib.observe.Change
+import com.github.ericytsang.lib.observe.addAndUpdate
 import com.github.ericytsang.lib.simulation.Simulation
 import com.github.ericytsang.research2016.announcementresolver.guicomponent.AgentsTableView
 import com.github.ericytsang.research2016.announcementresolver.guicomponent.DisplayModeComboBox
 import com.github.ericytsang.research2016.announcementresolver.guicomponent.ObstacleTableView
 import com.github.ericytsang.research2016.announcementresolver.persist.AgentsSaveFileParser
 import com.github.ericytsang.research2016.announcementresolver.simulation.AgentController
-import com.github.ericytsang.research2016.announcementresolver.simulation.Obstacle
 import com.github.ericytsang.research2016.announcementresolver.simulation.VirtualAgentController
 import com.github.ericytsang.research2016.announcementresolver.simulation.Wall
 import com.github.ericytsang.research2016.propositionallogic.BruteForceAnnouncementResolutionStrategy

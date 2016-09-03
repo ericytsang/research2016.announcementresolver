@@ -1,7 +1,7 @@
 package com.github.ericytsang.research2016.announcementresolver.guicomponent
 
-import com.github.ericytsang.lib.collections.ConstrainedList
-import com.github.ericytsang.lib.collections.Constraint
+import com.github.ericytsang.lib.constrainedlist.ConstrainedList
+import com.github.ericytsang.lib.constrainedlist.Constraint
 import com.sun.javafx.collections.ObservableListWrapper
 import javafx.beans.InvalidationListener
 import javafx.event.EventHandler
@@ -12,8 +12,8 @@ import javafx.scene.control.ComboBox
 import javafx.scene.control.TextInputDialog
 import javafx.scene.layout.Priority
 import javafx.scene.layout.VBox
-import com.github.ericytsang.lib.collections.getRandom
 import com.github.ericytsang.lib.javafxutils.EditableListView
+import com.github.ericytsang.research2016.announcementresolver.getRandom
 import com.github.ericytsang.research2016.beliefrevisor.gui.Dimens
 import com.github.ericytsang.research2016.propositionallogic.BeliefRevisionStrategy
 import com.github.ericytsang.research2016.propositionallogic.ComparatorBeliefRevisionStrategy

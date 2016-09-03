@@ -23,13 +23,17 @@ repositories {
 }
 
 dependencies {
-    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-    compile "com.github.ericytsang:lib.collections:master-SNAPSHOT"
-    compile "com.github.ericytsang:lib.oopatterns:master-SNAPSHOT"
+    compile "com.github.ericytsang:lib.fsm:master-SNAPSHOT"
+    compile "com.github.ericytsang:lib.json:master-SNAPSHOT"
+    compile "com.github.ericytsang:lib.astar:master-SNAPSHOT"
+    compile "com.github.ericytsang:lib.observe:master-SNAPSHOT"
     compile "com.github.ericytsang:lib.simulator:master-SNAPSHOT"
-    compile "com.github.ericytsang:research2016.propositionallogic:master-SNAPSHOT"
+    compile "com.github.ericytsang:lib.concurrent:master-SNAPSHOT"
     compile "com.github.ericytsang:lib.javafxutils:master-SNAPSHOT"
-    compile group: 'org.json', name: 'json', version: '20160212'
+    compile "com.github.ericytsang:lib.constrainedlist:master-SNAPSHOT"
+    compile "com.github.ericytsang:research2016.propositionallogic:master-SNAPSHOT"
+    compile "org.json:json:20160212"
+    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     testCompile 'junit:junit:4.11'
     testCompile "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
 }

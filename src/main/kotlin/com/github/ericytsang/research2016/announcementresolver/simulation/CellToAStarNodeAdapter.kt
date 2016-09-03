@@ -1,6 +1,6 @@
 package com.github.ericytsang.research2016.announcementresolver.simulation
 
-import com.github.ericytsang.lib.algorithm.AStar
+import com.github.ericytsang.lib.astar.AStar
 import com.github.ericytsang.lib.simulation.Simulation
 
 /**

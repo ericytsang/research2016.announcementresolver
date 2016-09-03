@@ -1,6 +1,6 @@
 package com.github.ericytsang.research2016.announcementresolver.simulation
 
-import com.github.ericytsang.lib.oopatterns.Change
+import com.github.ericytsang.lib.observe.Change
 import com.github.ericytsang.lib.simulation.Simulation
 import com.github.ericytsang.research2016.propositionallogic.BeliefRevisionStrategy
 import com.github.ericytsang.research2016.propositionallogic.Proposition

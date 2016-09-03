@@ -1,13 +1,13 @@
 package com.github.ericytsang.research2016.announcementresolver.simulation
 
-import com.github.ericytsang.lib.algorithm.AStar
-import com.github.ericytsang.lib.algorithm.angle
-import com.github.ericytsang.lib.algorithm.angleDifference
-import com.github.ericytsang.lib.collections.getRandom
+import com.github.ericytsang.lib.astar.AStar
+import com.github.ericytsang.research2016.announcementresolver.angle
+import com.github.ericytsang.research2016.announcementresolver.angleDifference
 import com.github.ericytsang.lib.concurrent.future
-import com.github.ericytsang.lib.oopatterns.BackedField
-import com.github.ericytsang.lib.oopatterns.StateMachine
+import com.github.ericytsang.lib.observe.BackedField
+import com.github.ericytsang.lib.fsm.StateMachine
 import com.github.ericytsang.lib.simulation.Simulation
+import com.github.ericytsang.research2016.announcementresolver.getRandom
 import com.github.ericytsang.research2016.propositionallogic.*
 import javafx.geometry.Point2D
 import javafx.scene.paint.Color

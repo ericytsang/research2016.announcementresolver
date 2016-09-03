@@ -1,6 +1,6 @@
 package com.github.ericytsang.research2016.announcementresolver.simulation
 
-import com.github.ericytsang.lib.oopatterns.BackedField
+import com.github.ericytsang.lib.observe.BackedField
 import com.github.ericytsang.lib.simulation.Renderer
 import javafx.application.Platform
 import javafx.geometry.Point2D
