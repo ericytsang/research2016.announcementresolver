@@ -26,13 +26,11 @@ dependencies {
     compile "com.github.ericytsang:lib.fsm:1.0"
     compile "com.github.ericytsang:lib.json:1.0"
     compile "com.github.ericytsang:lib.astar:1.0"
-    compile "com.github.ericytsang:lib.observe:1.0"
     compile "com.github.ericytsang:lib.simulator:1.2"
     compile "com.github.ericytsang:lib.concurrent:1.0"
     compile "com.github.ericytsang:lib.javafxutils:1.1"
     compile "com.github.ericytsang:lib.constrainedlist:1.0"
     compile "com.github.ericytsang:research2016.propositionallogic:jvm_3.0"
-    compile "org.json:json:20160212"
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     testCompile 'junit:junit:4.11'
     testCompile "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
