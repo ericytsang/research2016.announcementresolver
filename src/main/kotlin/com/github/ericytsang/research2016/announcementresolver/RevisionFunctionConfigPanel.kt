@@ -1,5 +1,7 @@
 package com.github.ericytsang.research2016.announcementresolver
 
+import com.github.ericytsang.lib.constrainedlist.ConstrainedList
+import com.github.ericytsang.lib.constrainedlist.Constraint
 import com.sun.javafx.collections.ObservableListWrapper
 import javafx.beans.InvalidationListener
 import javafx.event.EventHandler
@@ -10,8 +12,8 @@ import javafx.scene.control.ComboBox
 import javafx.scene.control.TextInputDialog
 import javafx.scene.layout.Priority
 import javafx.scene.layout.VBox
-import com.github.ericytsang.lib.collections.getRandom
 import com.github.ericytsang.lib.javafxutils.EditableListView
+import com.github.ericytsang.research2016.announcementresolver.getRandom
 import com.github.ericytsang.research2016.beliefrevisor.gui.Dimens
 import com.github.ericytsang.research2016.propositionallogic.BeliefRevisionStrategy
 import com.github.ericytsang.research2016.propositionallogic.ComparatorBeliefRevisionStrategy
@@ -26,6 +28,7 @@ import com.github.ericytsang.research2016.propositionallogic.WeightedHammingDist
 import com.github.ericytsang.research2016.propositionallogic.makeFrom
 import com.github.ericytsang.research2016.propositionallogic.toParsableString
 import java.io.Serializable
+import java.util.ArrayList
 import java.util.Collections
 import java.util.Optional
 
@@ -151,72 +154,63 @@ class RevisionFunctionConfigPanel():VBox()
 
     private inner class WeightedHammingDistanceOption:Option("Weighted Hamming Distance")
     {
-        override val settingsPanel = object:EditableListView<Mapping,TextInputDialog,String>()
+        override val settingsPanel = object:EditableListView<Mapping>()
         {
             init
             {
                 setVgrow(this,Priority.ALWAYS)
+
+                items = ArrayList<Mapping>().let()
+                {
+                    ConstrainedList(it).apply()
+                    {
+                        constraints += Constraint.new<List<Mapping>>().apply()
+                        {
+                            description = "each variable may only be mapped once"
+                            isConsistent = Constraint.Predicate.new()
+                            {
+                                it.newValue.map {it.variableName}.toSet().size == it.newValue.map {it.variableName}.size
+                            }
+                        }
+                    }
+                }.let {ObservableListWrapper(it)}
             }
 
-            override fun tryParseInput(inputDialog:TextInputDialog):Mapping
+            override fun createOrUpdateItem(previousInput:Mapping?):Mapping?
             {
-                val subStrings = inputDialog.result.split("=")
-                if (subStrings.size != 2)
-                {
-                    throw IllegalArgumentException("an equals sign must be used to represent the mapping e.g. \"a = 5\"")
-                }
-                if (!(subStrings[0].trim().matches(Regex("[a-zA-Z]+"))))
-                {
-                    throw IllegalArgumentException("the variable name \"${subStrings[0].trim()}\" may only contain alphabetic characters.")
-                }
-                if (!(subStrings[1].trim().matches(Regex("[0-9]+"))))
-                {
-                    throw IllegalArgumentException("the variable weight \"${subStrings[1].trim()}\" may only contain numeric characters.")
-                }
-                val variableName = subStrings[0].trim()
-                val weight = subStrings[1].trim().toInt()
-                return Mapping(variableName,weight)
-            }
-
-            override fun makeInputDialog(model:Mapping?):TextInputDialog
-            {
-                return TextInputDialog(model?.toString())
+                val inputDialog = TextInputDialog(previousInput?.toString())
                     .apply {headerText = "Enter the mapping below"}
-            }
-
-            override fun isInputCancelled(result:Optional<String>):Boolean
-            {
-                return !result.isPresent
-            }
-
-            override fun tryAddToListAt(existingEntries:MutableList<Mapping>,indexOfEntry:Int,newEntry:Mapping)
-            {
-                if (existingEntries.any {it.variableName == newEntry.variableName})
+                while (inputDialog.showAndWait().isPresent)
                 {
-                    throw RuntimeException("A mapping for the variable \"${newEntry.variableName}\" already exists.")
+                    try
+                    {
+                        val subStrings = inputDialog.result.split("=")
+                        if (subStrings.size != 2)
+                        {
+                            throw IllegalArgumentException("an equals sign must be used to represent the mapping e.g. \"a = 5\"")
+                        }
+                        if (!(subStrings[0].trim().matches(Regex("[a-zA-Z]+"))))
+                        {
+                            throw IllegalArgumentException("the variable name \"${subStrings[0].trim()}\" may only contain alphabetic characters.")
+                        }
+                        if (!(subStrings[1].trim().matches(Regex("[0-9]+"))))
+                        {
+                            throw IllegalArgumentException("the variable weight \"${subStrings[1].trim()}\" may only contain numeric characters.")
+                        }
+                        val variableName = subStrings[0].trim()
+                        val weight = subStrings[1].trim().toInt()
+                        return Mapping(variableName,weight)
+                    }
+                    catch (ex:Exception)
+                    {
+                        val alert = Alert(Alert.AlertType.ERROR)
+                        alert.title = "Invalid Input"
+                        alert.headerText = "Invalid input format."
+                        alert.contentText = ex.message
+                        alert.showAndWait()
+                    }
                 }
-                else
-                {
-                    existingEntries.add(indexOfEntry,newEntry)
-                }
-            }
-
-            override fun tryRemoveFromListAt(existingEntries:MutableList<Mapping>,indexOfEntry:Int)
-            {
-                existingEntries.removeAt(indexOfEntry)
-            }
-
-            override fun tryUpdateListAt(existingEntries:MutableList<Mapping>,indexOfEntry:Int,newEntry:Mapping)
-            {
-                val resultingList = existingEntries.filterIndexed {i,e -> i != indexOfEntry}
-                if (resultingList.any {it.variableName == newEntry.variableName})
-                {
-                    throw RuntimeException("A mapping for the variable \"${newEntry.variableName}\" already exists.")
-                }
-                else
-                {
-                    existingEntries[indexOfEntry] = newEntry
-                }
+                return null
             }
         }
 
@@ -225,7 +219,7 @@ class RevisionFunctionConfigPanel():VBox()
             return ComparatorBeliefRevisionStrategy()
             {
                 initialBeliefState:Set<Proposition> ->
-                val weights = settingsPanel.items.associate {Variable.fromString(it.variableName) to it.weight}
+                val weights = settingsPanel.items.associate {Variable.Companion.fromString(it.variableName) to it.weight}
                 WeightedHammingDistanceComparator(initialBeliefState,weights)
             }
         }
@@ -244,19 +238,40 @@ class RevisionFunctionConfigPanel():VBox()
 
     private inner class OrderedSetsOption:Option("Ordered Sets")
     {
-        val listview = object:EditableListView<Proposition,TextInputDialog,String>()
+        val listview = object:EditableListView<Proposition>()
         {
-            override fun isInputCancelled(result:Optional<String>):Boolean
+            override fun createOrUpdateItem(previousInput:Proposition?):Proposition?
+            {
+                val inputDialog = makeInputDialog(previousInput)
+                while (!isInputCancelled(inputDialog.showAndWait()))
+                {
+                    try
+                    {
+                        return tryParseInput(inputDialog)
+                    }
+                    catch (ex:Exception)
+                    {
+                        val alert = Alert(Alert.AlertType.ERROR)
+                        alert.title = "Invalid Input"
+                        alert.headerText = "Invalid input format."
+                        alert.contentText = ex.message
+                        alert.showAndWait()
+                    }
+                }
+                return null
+            }
+
+            fun isInputCancelled(result:Optional<String>):Boolean
             {
                 return !result.isPresent
             }
 
-            override fun tryParseInput(inputDialog:TextInputDialog):Proposition
+            fun tryParseInput(inputDialog:TextInputDialog):Proposition
             {
                 return Proposition.makeFrom(inputDialog.result)
             }
 
-            override fun makeInputDialog(model:Proposition?):TextInputDialog
+            fun makeInputDialog(model:Proposition?):TextInputDialog
             {
                 return TextInputDialog(model?.toParsableString())
                     .apply()
@@ -272,7 +287,7 @@ class RevisionFunctionConfigPanel():VBox()
             {
                 val dialogTitles = "Generate Random Ordering"
                 val variablesPrompt = "Enter a comma separated list of all the variables below."
-                val variablesParser = {string:String -> string.split(",").map {Variable.fromString(it.trim())}.toSet()}
+                val variablesParser = {string:String -> string.split(",").map {Variable.Companion.fromString(it.trim())}.toSet()}
                 val numBucketsPrompt = "Enter the number of buckets to sort generated states into."
                 val numBucketsParser = {string:String -> string.toInt()}
 
@@ -283,8 +298,8 @@ class RevisionFunctionConfigPanel():VBox()
                 // randomized list of all possible states involving all
                 // variables in variables represented by variable
                 // conjunctions.
-                val allStates = State.permutationsOf(variables)
-                    .map {Proposition.fromState(it)}
+                val allStates = State.Companion.permutationsOf(variables)
+                    .map {Proposition.Companion.fromState(it)}
                     .toMutableList()
                     .apply {Collections.shuffle(this)}
                     .iterator()
@@ -307,7 +322,7 @@ class RevisionFunctionConfigPanel():VBox()
                         }
                         allStates.forEach {getRandom().add(it)}
                     }
-                    .filter {it.isNotEmpty()}.map {Or.make(it.toList())}
+                    .filter {it.isNotEmpty()}.map {Or.Companion.make(it.toList())}
 
                 // add all the dnf sentences to the listView.
                 listview.items.clear()

@@ -1,6 +1,7 @@
 package com.github.ericytsang.research2016.announcementresolver
 
 import com.github.ericytsang.lib.javafxutils.EditableTableView
+import com.github.ericytsang.lib.javafxutils.JavafxUtils
 import com.github.ericytsang.research2016.beliefrevisor.gui.Dimens
 import com.github.ericytsang.research2016.propositionallogic.AnnouncementResolutionStrategy
 import com.github.ericytsang.research2016.propositionallogic.BruteForceAnnouncementResolutionStrategy
@@ -109,7 +110,7 @@ class Gui:Application()
      * to display the revised belief state of agents if an announcement is
      * found.
      */
-    private val agentsTableView:EditableTableView<AgentListItem,Alert,ButtonType> = object:EditableTableView<AgentListItem,Alert,ButtonType>()
+    private val agentsTableView:EditableTableView<AgentListItem> = object:EditableTableView<AgentListItem>()
     {
         init
         {
@@ -158,23 +159,24 @@ class Gui:Application()
             }
         }
 
-        override fun isInputCancelled(result:Optional<ButtonType>):Boolean
+        override fun createOrUpdateItem(previousInput:AgentListItem?):AgentListItem?
         {
-            return result.get() != ButtonType.OK
-        }
-
-        override fun makeInputDialog(model:AgentListItem?):Alert
-        {
-            return InputDialog(model)
-        }
-
-        override fun tryParseInput(inputDialog:Alert):AgentListItem
-        {
-            inputDialog as InputDialog
-            val initialK = inputDialog.initialKTextField.text.split(",").map {Proposition.makeFrom(it)}.toSet()
-            val targetK = Proposition.makeFrom(inputDialog.targetKTextField.text)
-            val beliefRevisionStrategy = inputDialog.operatorInputPane.beliefRevisionStrategy ?: throw IllegalArgumentException("A belief revision operation must be specified")
-            return AgentListItem(AnnouncementResolutionStrategy.ProblemInstance(initialK,targetK,beliefRevisionStrategy),inputDialog.operatorInputPane,displayModeComboBox.value.transform)
+            val inputDialog = InputDialog(previousInput)
+            while (inputDialog.showAndWait().get() == ButtonType.OK)
+            {
+                try
+                {
+                    val initialK = inputDialog.initialKTextField.text.split(",").map {Proposition.makeFrom(it)}.toSet()
+                    val targetK = Proposition.makeFrom(inputDialog.targetKTextField.text)
+                    val beliefRevisionStrategy = inputDialog.operatorInputPane.beliefRevisionStrategy ?: throw IllegalArgumentException("A belief revision operation must be specified")
+                    return AgentListItem(AnnouncementResolutionStrategy.ProblemInstance(initialK,targetK,beliefRevisionStrategy),inputDialog.operatorInputPane,displayModeComboBox.value.transform)
+                }
+                catch (ex:Exception)
+                {
+                    JavafxUtils.showErrorDialog(inputDialog.title,"Invalid input.",ex)
+                }
+            }
+            return null
         }
     }
 
