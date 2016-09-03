@@ -20,14 +20,41 @@ import com.github.ericytsang.research2016.propositionallogic.makeFrom
 import com.github.ericytsang.research2016.propositionallogic.toDnf
 import com.github.ericytsang.research2016.propositionallogic.toParsableString
 import javafx.application.Application
+import javafx.fxml.FXMLLoader
+import javafx.scene.Parent
+import javafx.scene.Scene
+import javafx.stage.Stage
 import java.io.InputStreamReader
 
 object GuiLauncher
 {
+    /**
+     * initial width of the window when the application starts.
+     */
+    private val WINDOW_WIDTH:Double = 700.0
+
+    /**
+     * initial height of the window when the application starts.
+     */
+    private val WINDOW_HEIGHT:Double = 400.0
+
     @JvmStatic
     fun main(args:Array<String>)
     {
-        Application.launch(Gui::class.java)
+        Application.launch(App::class.java)
+    }
+
+    class App:Application()
+    {
+        override fun start(primaryStage:Stage)
+        {
+            val root = FXMLLoader(javaClass.classLoader.getResource("agentswindow.fxml"))
+                .load<Parent>()
+
+            primaryStage.title = "Announcement Finder"
+            primaryStage.scene = Scene(root,WINDOW_WIDTH,WINDOW_HEIGHT)
+            primaryStage.show()
+        }
     }
 }
 
@@ -187,23 +214,14 @@ object ExhaustiveAnnouncementResolver
 
 fun JSONObject.toProblemInstance():AnnouncementResolutionStrategy.ProblemInstance
 {
-//    val allVariables = this
-//        .getJSONArray("${jsonSchema.initialK}")
-//        .plus(this.getString("${jsonSchema.targetK}"))
-//        .map {Proposition.makeFrom(it as String)}
-//        .flatMap {it.variables}
-//        .map {it or it.not}
-//        .let {And.make(it) ?: tautology}
-
     val initialK:Set<Proposition> = this
         .getJSONArray("${jsonSchema.initialK}")
         .map {Proposition.makeFrom(it as String)}
-//        .plus(allVariables)
         .toSet()
 
     val targetK:Proposition = this
         .getString("${jsonSchema.targetK}")
-        .let {Proposition.makeFrom(it)/* and allVariables*/}
+        .let {Proposition.makeFrom(it)}
 
     val operator:BeliefRevisionStrategy = this
         .getJSONObject("${jsonSchema.operator}")

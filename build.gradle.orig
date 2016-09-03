@@ -27,6 +27,11 @@ dependencies {
     compile "com.github.ericytsang:lib.constrainedlist:1.0"
     compile "com.github.ericytsang:research2016.propositionallogic:jvm_3.0"
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+<<<<<<< HEAD
+=======
+    compile "com.github.ericytsang:research2016.propositionallogic:jvm_2.1"
+    compile "com.github.ericytsang:lib.javafxutils:master-SNAPSHOT"
+>>>>>>> standalone_1.1
     compile group: 'org.json', name: 'json', version: '20160212'
     testCompile 'junit:junit:4.11'
     testCompile "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
